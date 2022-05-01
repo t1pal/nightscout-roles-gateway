@@ -1,0 +1,21 @@
+{
+  "name": "nightscout-roles-gateway",
+  "version": "0.0.1",
+  "description": "A cloud native oauth 2.0 rbac controller for Nightscout.",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Ben West",
+  "license": "MIT",
+  "dependencies": {
+    "bootevent": "0.0.1",
+    "jsonpath-plus": "^6.0.1",
+    "knex": "^2.0.0",
+    "knex-utils": "^5.5.0",
+    "pg": "^8.7.3",
+    "restify": "^8.6.1",
+    "short-unique-id": "^4.4.4",
+    "sqlite3": "^5.0.6"
+  }
+}

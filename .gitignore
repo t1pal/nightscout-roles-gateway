@@ -1,0 +1,4 @@
+node_modules/
+*.sqlite3
+.*.sw[op]
+.env

@@ -21,7 +21,7 @@ exports.up = function(knex) {
 
   })
   .then(function ( ) {
-    knex.raw(config.onUpdateTrigger('scheduled_policies'));
+    return knex.raw(config.onUpdateTrigger('scheduled_policies'));
   });
 
 };

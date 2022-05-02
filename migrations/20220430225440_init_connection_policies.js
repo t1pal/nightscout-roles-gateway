@@ -18,7 +18,7 @@ exports.up = function(knex) {
       .comment("The declaration of the policy or reference to a scheduled policy.");
   })
   .then(function ( ) {
-    knex.raw(config.onUpdateTrigger('connection_policies'));
+    return knex.raw(config.onUpdateTrigger('connection_policies'));
   });
 
 };

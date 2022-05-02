@@ -19,7 +19,7 @@ exports.up = function(knex) {
       .comment("The content fo the spec.  Eg: the email address, or identifier of the Facebook Group, or reference to internal group id.");
   })
   .then(function ( ) {
-    knex.raw(config.onUpdateTrigger('group_inclusion_specs'));
+    return knex.raw(config.onUpdateTrigger('group_inclusion_specs'));
   });
 
 };

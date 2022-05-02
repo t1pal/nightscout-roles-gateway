@@ -20,7 +20,7 @@ exports.up = function(knex) {
     // /table.boolean('allow_discovery').defaultTo(false);
   })
   .then(function ( ) {
-    knex.raw(config.onUpdateTrigger('group_definitions'));
+    return knex.raw(config.onUpdateTrigger('group_definitions'));
   });
 
 };

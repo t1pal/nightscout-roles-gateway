@@ -27,8 +27,8 @@ exports.up = function(knex) {
       .comment("The app that created or manages this site for the user");
     table.string('api_secret')
       .comment("The API-SECRET of the Nightscout site.");
-    table.string('hashed_api_secret').index( )
-      .comment("The hashed API-SECRET of the Nightscout site.");
+    // table.string('hashed_api_secret').index( )
+    // .comment("The hashed API-SECRET of the Nightscout site.");
     table.string('admin_spec')
       .comment("TBD");
   })
@@ -36,27 +36,7 @@ exports.up = function(knex) {
 		return knex.raw(config.onUpdateTrigger('registered_sites'))
     .then(function ( ) {
       return knex.raw(`
-        CREATE OR REPLACE FUNCTION set_hashed_api_secret() RETURNS trigger AS $$
-        BEGIN
-          IF tg_op = 'INSERT' OR tg_op = 'UPDATE' THEN
-            NEW.hashed_api_secret = encode(digest(NEW.api_secret, 'sha1'), 'hex');
-            RETURN NEW;
-          END IF;
-        END;
-        $$ LANGUAGE plpgsql;
 
-
-
-        CREATE TRIGGER registered_sites_hash_api_secret_insert
-        BEFORE INSERT ON registered_sites
-        FOR EACH ROW
-        EXECUTE PROCEDURE set_hashed_api_secret();
-
-        CREATE TRIGGER registered_sites_hash_api_secret_update
-        BEFORE UPDATE ON registered_sites
-        FOR EACH ROW
-        WHEN ( NEW.api_secret IS DISTINCT FROM OLD.api_secret )
-        EXECUTE PROCEDURE set_hashed_api_secret();
       `);
     });;
   });
@@ -71,10 +51,6 @@ exports.down = function(knex) {
 
   return knex.schema.dropTable('registered_sites').then(function ( ) {
     return knex.raw(`
-      DROP FUNCTION IF EXISTS set_hashed_api_secret() CASCADE;
-
-      DROP TRIGGER IF EXISTS registered_sites_hash_api_secret_insert CASCADE;
-      DROP TRIGGER IF EXISTS registered_sites_hash_api_secret_update CASCADE;
     `);
   });;
 };

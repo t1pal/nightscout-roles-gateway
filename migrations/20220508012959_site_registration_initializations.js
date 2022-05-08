@@ -63,6 +63,14 @@ exports.up = function(knex) {
                   AND site_acls.owner_ref = NEW.owner_ref
                   AND site_acls.id is NULL);
 
+            UPDATE registered_sites
+              SET
+                upstream_origin = COALESCE(NEW.upstream_origin, OLD.upstream_origin)
+              , api_secret = COALESCE(NEW.api_secret, OLD.api_secret)
+              , nickname = COALESCE(NEW.site_name, OLD.site_name)
+              WHERE
+                id = NEW.id
+              ;
             INSERT INTO group_definitions (id, owner_ref, nickname)
               VALUES (
                 COALESCE(NEW.group_id, OLD.group_id)

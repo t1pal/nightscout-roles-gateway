@@ -8,6 +8,7 @@ exports.up = function(knex) {
     var select = knex('site_registration_synopsis').select([
       'site_registration_synopsis.*'
     , knex.raw("'' as api_secret")
+    , 'registered_sites.client_app'
     , 'registered_sites.nickname as site_name'
     , 'registered_sites.upstream_origin'
     , 'site_acls.group_id'
@@ -101,13 +102,14 @@ exports.up = function(knex) {
         CREATE OR REPLACE FUNCTION initialize_site_registration() RETURNS trigger AS $$
         BEGIN
           INSERT INTO registered_sites
-            (id, owner_ref, expected_name, upstream_origin, nickname, api_secret)
+            (id, owner_ref, expected_name, upstream_origin, nickname, client_app, api_secret)
           VALUES (
             NEW.id
           , NEW.owner_ref
           , NEW.expected_name
           , NEW.upstream_origin
           , NEW.site_name
+          , NEW.client_app
           , NEW.api_secret
           );
 

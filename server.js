@@ -21,6 +21,7 @@ function create (env, ctx) {
 
   server.store = ctx.store;
   server.use(restify.plugins.bodyParser({mapParams: true }));
+  server.use(restify.plugins.queryParser( ));
 
   // mount routes
   routes(env, server);

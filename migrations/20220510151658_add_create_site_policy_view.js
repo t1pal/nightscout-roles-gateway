@@ -160,7 +160,7 @@ exports.up = function(knex) {
           FROM site_policy_details
           JOIN updated_policy_values as upv
             ON upv.expected_name = site_policy_details.expected_name
-            AND upv.site_id = site_policy_details.site_id
+               AND upv.site_id = site_policy_details.site_id
             AND upv.group_id = site_policy_details.group_id
           WHERE (
             (NEW.site_id = site_policy_details.site_id

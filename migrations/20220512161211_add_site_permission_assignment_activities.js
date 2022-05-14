@@ -38,51 +38,13 @@ exports.up = function(knex) {
     table.string('sites_site_id');
     table.string('groups_group_id');
     table.string('policies_policy_id');
+    table.string('reassign_group_id');
     // table.
   
   })
   .then(function ( ) {
             // -- AND NOT (NEW.id IS NULL OR NEW.group_id IS NULL or NEW.policy_type IS NULL or NEW.policy_spec IS NULL)
             /*
-        ),
-        groups AS (
-          SELECT id FROM group_definitions WHERE group_definitions.id = NEW.group_id;
-        ),
-        determine_operation (id, operation, policy_id, policies_policy_id, groups_group_id, sites_site_id
-        ) AS (
-        SELECT 
-          NEW.id,
-          CASE
-            WHEN NEW.operation = 'delete' THEN
-            'delete'
-            WHEN policy_id != NEW.id THEN
-            'update'
-          ELSE
-          -- WHEN policy_id = NEW.id THEN
-            'add'
-          END as operation,
-          COALESCE(existing.id, NEW.id) as policy_id,
-          existing.id as policies_policy_id,
-          groups.id as groups_group_id,
-          sites.id as sites_site_id
-        FROM registered_sites as sites
-          JOIN groups
-            ON groups.owner_ref = sites.owner_ref
-          INNER JOIN find_existing as existing
-             ON existing.group_id = groups.id
-            AND existing.site_id = sites.id
-          WHERE sites.expected_name = NEW.expected_name
-            AND groups.id = NEW.group_id
-        
-        )
-        PERFORM (SELECT *
-          FROM determine_operation
-          WHERE determine_operation.id = NEW.id
-          RETURNING * INTO NEW.*);
-        PERFORM SELECT * from find_existing;
-        IF FOUND THEN
-          NEW.operation = 'foobar'
-        END IF;
             */
     return knex.raw(`
 
@@ -155,32 +117,195 @@ exports.up = function(knex) {
 
       CREATE OR REPLACE FUNCTION after_insert_permission_assignment_activity()
       RETURNS TRIGGER AS $$
+      DECLARE
+        prior site_policy_overview;
+        candidate site_policy_overview;
+        -- candidate record;
       BEGIN
-        CASE
-        WHEN false THEN
-          NULL;
-        ELSE
-          NULL;
-        END;
-        IF NEW.policy_id = NEW.id THEN
-          -- INSERT FROM SELECT ... RETURNING ... INTO NEW;
-          -- NEW.operation = 
-          -- NEW.policy_id = 
-          -- NEW.sites_site_id
-          -- NEW.groups_group_id
-          -- NEW.policies_policy_id
-          NULL;
-        ELSIF (false) THEN
-          -- UPDATE ...
-          -- NEW.policy_id = NEW.id;
-          -- PERFORM SELECT ... RETURNING INTO NEW;
-          -- NEW.policy_id = 
-          -- NEW.sites_site_id
-          -- NEW.groups_group_id
-          -- NEW.policies_policy_id
-          NULL;
+        SELECT *
+        INTO prior
+        FROM site_policy_overview AS spo
+        WHERE (((spo.expected_name = NEW.expected_name
+              OR spo.site_id = NEW.site_id)
+            AND spo.group_id = NEW.group_id) 
+            OR spo.id = NEW.policy_id)
+            AND spo.owner_ref = NEW.owner_ref
+        ;
+        SELECT
+          anon.policy_id as id,
+          anon.owner_ref,
+          anon.expected_name,
+          anon.site_id,
+          COALESCE(anon.reassign_group_id, anon.group_id) as group_id,
+          NULL as group_name,
+          COALESCE(anon.policy_name, spo.policy_name) as policy_name,
+          COALESCE(anon.policy_note, spo.policy_note) as policy_note,
+          COALESCE(anon.policy_type, spo.policy_type) as policy_type,
+          COALESCE(anon.policy_spec, spo.policy_spec) as policy_spec,
+          0 as sort,
+          COALESCE(anon.schedule_id, spo.schedule_id) as schedule_id,
+          COALESCE(anon.schedule_name, spo.schedule_name) as schedule_name,
+          COALESCE(anon.schedule_type, spo.schedule_type) as schedule_type,
+          COALESCE(anon.fill_pattern, spo.fill_pattern) as fill_pattern,
+          COALESCE(anon.schedule_segments, spo.schedule_segments) as schedule_segments,
+          COALESCE(anon.schedule_description, spo.schedule_description) as schedule_description
+        INTO candidate
+        FROM (SELECT NEW.* LIMIT 1) AS anon
+        LEFT JOIN site_policy_overview as spo
+          ON spo.id = anon.policy_id
+          AND spo.group_id = anon.group_id
+        WHERE spo.id = NEW.policy_id
+        ;
+
+        IF candidate.id IS NOT NULL THEN
+          UPDATE connection_policies 
+            SET
+            group_definition_id=candidate.group_id,
+            -- expected_name=candidate.expected_name,
+            policy_name=candidate.policy_name,
+            policy_note=candidate.policy_note,
+            policy_type=candidate.policy_type,
+            policy_spec=candidate.policy_spec
+            -- schedule_id=candidate.schedule_id,
+            -- schedule_name=candidate.schedule_name,
+            -- schedule_type=candidate.schedule_type,
+            -- fill_pattern=candidate.fill_pattern,
+            -- schedule_segments=candidate.schedule_segments,
+            -- schedule_description=candidate.schedule_description
+          FROM (SELECT candidate.*) as ignore
+          WHERE connection_policies.id = candidate.id
+          AND ignore.id = connection_policies.id
+          AND prior.id IS NOT NULL
+          -- AND ignore.id = site_policy_overview.id
+          -- AND site_policy_overview.expected_name = candidate.expected_name
+          -- AND site_policy_overview.group_id = candidate.group_id
+          ;
+
+          UPDATE scheduled_policies
+            SET
+            -- id=candidate.schedule_id,
+            policy_id=candidate.candidate.id,
+            schedule_nickname=candidate.schedule_name,
+            schedule_type=candidate.schedule_type,
+            fill_pattern=candidate.fill_pattern,
+            schedule_segments=candidate.schedule_segments,
+            schedule_description=candidate.schedule_description
+          WHERE scheduled_policies.id = candidate.id
+          AND prior.id IS NOT NULL
+          AND prior.schedule_id IS NOT NULL
+          ;
+
+          INSERT INTO scheduled_policies (id, policy_id, schedule_nickname, schedule_type, fill_pattern, schedule_segments, schedule_description)
+          SELECT
+            candidate.schedule_id
+          , candidate.policy_id
+          , candidate.schedule_name
+          , candidate.schedule_type
+          , candidate.fill_pattern
+          , candidate.schedule_segments
+          , candidate.schedule_description
+          WHERE prior.schedule_id != NEW.schedule_id
+            AND prior.schedule_id IS NULL
+            AND NEW.schedule_id IS NOT NULL
+            AND NEW.schedule_type IS NOT NULL
+            AND NEW.schedule_segments IS NOT NULL
+            AND NEW.fill_pattern IS NOT NULL
         END IF;
-        RETURN NULL;
+
+        WITH new_values AS (
+          SELECT candidate.*
+          /*
+        )
+        , oldnew_values AS (
+          SELECT
+            anon.policy_id as id,
+            anon.owner_ref,
+            anon.expected_name,
+            anon.site_id,
+            COALESCE(anon.reassign_group_id, anon.group_id) as group_id,
+            NULL as group_name,
+            COALESCE(anon.policy_name, spo.policy_name) as policy_name,
+            COALESCE(anon.policy_note, spo.policy_note) as policy_note,
+            COALESCE(anon.policy_type, spo.policy_type) as policy_type,
+            COALESCE(anon.policy_spec, spo.policy_spec) as policy_spec,
+            0 as sort,
+            COALESCE(anon.schedule_id, spo.schedule_id) as schedule_id,
+            COALESCE(anon.schedule_name, spo.schedule_name) as schedule_name,
+            COALESCE(anon.schedule_type, spo.schedule_type) as schedule_type,
+            COALESCE(anon.fill_pattern, spo.fill_pattern) as fill_pattern,
+            COALESCE(anon.schedule_segments, spo.schedule_segments) as schedule_segments,
+            COALESCE(anon.schedule_description, spo.schedule_description) as schedule_description
+            -- CASE WHEN false THEN NULL; ELSE NULL; END
+          FROM (SELECT NEW.* LIMIT 1) AS anon
+          LEFT JOIN site_policy_overview as spo
+            ON spo.id = anon.policy_id
+            AND spo.group_id = anon.group_id
+          WHERE spo.id = NEW.policy_id
+          */
+        ),
+        update_policy AS (
+          SELECT candidate.*
+          FROM
+          site_policy_overview as _spo
+            WHERE _spo.id = NEW.policy_id
+              
+        ),
+        notupdate_policy AS (
+        SELECT 1
+        /*
+          UPDATE site_policy_overview
+            SET
+            group_id=candidate.group_id,
+            expected_name=candidate.expected_name,
+            policy_name=candidate.policy_name,
+            policy_note=candidate.policy_note,
+            policy_type=candidate.policy_type,
+            policy_spec=candidate.policy_spec,
+            schedule_id=candidate.schedule_id,
+            schedule_name=candidate.schedule_name,
+            schedule_type=candidate.schedule_type,
+            fill_pattern=candidate.fill_pattern,
+            schedule_segments=candidate.schedule_segments,
+            schedule_description=candidate.schedule_description
+          FROM (SELECT candidate.*) as ignore
+          WHERE site_policy_overview.id = candidate.id
+          AND ignore.id = site_policy_overview.id
+          AND site_policy_overview.expected_name = candidate.expected_name
+          AND site_policy_overview.group_id = candidate.group_id
+          -- AND EXISTS(prior)
+          RETURNING *
+          -- RETURNING spo.*
+        */
+        )
+        INSERT INTO site_policy_overview
+
+          (
+            id,
+            owner_ref,
+            expected_name,
+            site_id,
+            group_id,
+            group_name,
+            policy_name,
+            policy_note,
+            policy_type,
+            policy_spec,
+            sort,
+            schedule_id,
+            schedule_name,
+            schedule_type,
+            fill_pattern,
+            schedule_segments,
+            schedule_description
+          )
+
+        SELECT new_values.*
+        FROM new_values
+        WHERE NOT EXISTS (SELECT 1
+          FROM update_policy
+          WHERE update_policy.id = NEW.policy_id
+        );
+        RETURN NEW;
       END;
       $$ LANGUAGE plpgsql;
 

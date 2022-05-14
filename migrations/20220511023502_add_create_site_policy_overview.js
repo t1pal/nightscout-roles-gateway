@@ -178,7 +178,7 @@ exports.up = function(knex) {
             )
             AND NEW.owner_ref = site_policy_overview.owner_ref
           ) as candidate
-          RETURNING id INTO NEW.id
+          -- RETURNING id INTO NEW.id
           ;
 
           IF (OLD.schedule_id IS DISTINCT FROM NEW.schedule_id) THEN
@@ -226,14 +226,8 @@ exports.up = function(knex) {
             WHERE id IS NULL AND schedule_id IS NOT NULL
           ) ;
           END IF;
-          IF NOT FOUND THEN
-            NULL;
-          END IF;
-          SELECT id FROM site_policy_overview
-            WHERE site_policy_overview.id = NEW.group_id
-              AND site_policy_overview.expected_name = NEW.expected_name
-              ;
-          RETURN FOUND;
+          -- IF NOT FOUND THEN NULL; END IF;
+          RETURN NEW;
         END;
         $$ LANGUAGE plpgsql;
 

@@ -157,6 +157,89 @@ exports.up = function(knex) {
         WHERE spo.id = NEW.policy_id
         ;
 
+        /*
+        */
+        IF NEW.resort IS NOT NULL THEN
+          -- candidate.sort := COALESCE(candidate.sort, 0) + NEW.resort;
+          WITH count_max AS (
+
+            SELECT cp.site_id, count(*) as count
+            FROM site_policy_overview AS cp
+            WHERE cp.site_id = NEW.site_id
+            GROUP BY cp.site_id
+
+          ), rules_per_site AS (
+
+            SELECT cp.site_id,
+            cp.group_id,
+            count(group_id) AS dups,
+            0 as min,
+            row_number( ) OVER ( PARTITION BY cp.site_id ) AS num
+            FROM site_policy_overview as cp
+            WHERE cp.site_id = NEW.site_id
+            GROUP BY cp.site_id, cp.group_id
+
+          ), groups_per_site AS (
+
+            SELECT cp.id, groups.dups AS dups,
+            groups.min,
+            groups.num,
+            cp.sort AS prev,
+            groups.num + NEW.resort as add,
+            groups.num - NEW.resort as sub,
+            pp.count
+            FROM site_policy_overview AS cp
+            INNER JOIN rules_per_site AS groups
+              ON groups.site_id = cp.site_id
+              AND groups.group_id = cp.group_id
+            INNER JOIN count_max as pp
+              ON pp.site_id = cp.site_id
+            WHERE cp.site_id = NEW.site_id
+            ORDER BY cp.sort
+
+          ), find_max AS (
+
+            SELECT gs.*, cp.id as cp_id, cp.sort as cp_srt
+            FROM site_policy_overview AS cp
+            JOIN groups_per_site AS gs
+              ON gs.id = cp.id
+            WHERE cp.site_id = candidate.site_id
+
+          ), updated_sorts AS (
+
+            SELECT cp.id,
+              cp.sort AS old_sort,
+              CASE
+              WHEN cp.id = candidate.id THEN
+                find_max.add
+              WHEN NEW.resort > 0 AND find_max.num >= (candidate.sort) THEN
+                find_max.sub
+              WHEN NEW.resort < 0 AND find_max.num <= (candidate.sort) THEN
+                find_max.sub
+              ELSE
+                COALESCE(find_max.num, cp.sort, 0)
+              END as new_sort
+            FROM connection_policies as cp
+            JOIN find_max
+              ON find_max.id = cp.id
+            WHERE cp.site_id = candidate.site_id
+              -- AND cp.id != candidate.id
+
+          )
+          UPDATE connection_policies as cp
+            SET sort = updated_sorts.new_sort
+
+          FROM updated_sorts
+          WHERE cp.site_id = candidate.site_id
+            -- AND cp.id != candidate.id
+            AND updated_sorts.id = cp.id
+          ;
+        END IF;
+
+        IF NEW.reassign_group_id IS NOT NULL THEN
+          NULL;
+        END IF;
+
         IF candidate.id IS NOT NULL THEN
           UPDATE connection_policies 
             SET
@@ -184,7 +267,7 @@ exports.up = function(knex) {
           UPDATE scheduled_policies
             SET
             -- id=candidate.schedule_id,
-            policy_id=candidate.candidate.id,
+            -- policy_id=candidate.candidate.id,
             schedule_nickname=candidate.schedule_name,
             schedule_type=candidate.schedule_type,
             fill_pattern=candidate.fill_pattern,
@@ -198,7 +281,7 @@ exports.up = function(knex) {
           INSERT INTO scheduled_policies (id, policy_id, schedule_nickname, schedule_type, fill_pattern, schedule_segments, schedule_description)
           SELECT
             candidate.schedule_id
-          , candidate.policy_id
+          , NEW.policy_id
           , candidate.schedule_name
           , candidate.schedule_type
           , candidate.fill_pattern
@@ -210,38 +293,11 @@ exports.up = function(knex) {
             AND NEW.schedule_type IS NOT NULL
             AND NEW.schedule_segments IS NOT NULL
             AND NEW.fill_pattern IS NOT NULL
+          ;
         END IF;
 
         WITH new_values AS (
           SELECT candidate.*
-          /*
-        )
-        , oldnew_values AS (
-          SELECT
-            anon.policy_id as id,
-            anon.owner_ref,
-            anon.expected_name,
-            anon.site_id,
-            COALESCE(anon.reassign_group_id, anon.group_id) as group_id,
-            NULL as group_name,
-            COALESCE(anon.policy_name, spo.policy_name) as policy_name,
-            COALESCE(anon.policy_note, spo.policy_note) as policy_note,
-            COALESCE(anon.policy_type, spo.policy_type) as policy_type,
-            COALESCE(anon.policy_spec, spo.policy_spec) as policy_spec,
-            0 as sort,
-            COALESCE(anon.schedule_id, spo.schedule_id) as schedule_id,
-            COALESCE(anon.schedule_name, spo.schedule_name) as schedule_name,
-            COALESCE(anon.schedule_type, spo.schedule_type) as schedule_type,
-            COALESCE(anon.fill_pattern, spo.fill_pattern) as fill_pattern,
-            COALESCE(anon.schedule_segments, spo.schedule_segments) as schedule_segments,
-            COALESCE(anon.schedule_description, spo.schedule_description) as schedule_description
-            -- CASE WHEN false THEN NULL; ELSE NULL; END
-          FROM (SELECT NEW.* LIMIT 1) AS anon
-          LEFT JOIN site_policy_overview as spo
-            ON spo.id = anon.policy_id
-            AND spo.group_id = anon.group_id
-          WHERE spo.id = NEW.policy_id
-          */
         ),
         update_policy AS (
           SELECT candidate.*
@@ -249,33 +305,6 @@ exports.up = function(knex) {
           site_policy_overview as _spo
             WHERE _spo.id = NEW.policy_id
               
-        ),
-        notupdate_policy AS (
-        SELECT 1
-        /*
-          UPDATE site_policy_overview
-            SET
-            group_id=candidate.group_id,
-            expected_name=candidate.expected_name,
-            policy_name=candidate.policy_name,
-            policy_note=candidate.policy_note,
-            policy_type=candidate.policy_type,
-            policy_spec=candidate.policy_spec,
-            schedule_id=candidate.schedule_id,
-            schedule_name=candidate.schedule_name,
-            schedule_type=candidate.schedule_type,
-            fill_pattern=candidate.fill_pattern,
-            schedule_segments=candidate.schedule_segments,
-            schedule_description=candidate.schedule_description
-          FROM (SELECT candidate.*) as ignore
-          WHERE site_policy_overview.id = candidate.id
-          AND ignore.id = site_policy_overview.id
-          AND site_policy_overview.expected_name = candidate.expected_name
-          AND site_policy_overview.group_id = candidate.group_id
-          -- AND EXISTS(prior)
-          RETURNING *
-          -- RETURNING spo.*
-        */
         )
         INSERT INTO site_policy_overview
 

@@ -8,7 +8,18 @@ module.exports = {
       filename: './dev.sqlite3'
     }
   },
-
+  test: {
+    client: 'postgresql',
+    connection: 'postgres://test_nrg_u:test_nrg_p@hostedpg.service.consul/test_nrg',
+    pool: {
+      idleTimeoutMillis: 500,
+      min: 0,
+      max: 1
+    },
+    migrations: {
+      tableName: 'knex_migrations'
+    }
+  },
   staging: {
     client: 'postgresql',
     connection: process.env.KNEX_CONNECT,

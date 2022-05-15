@@ -86,6 +86,8 @@ exports.up = function(knex) {
 exports.down = function(knex) {
   /*
   */
+  return Promise.resolve(true);
+  return knex.schema.dropViewIfExists('site_acls').then(function ( ) {
   return knex.schema.createViewOrReplace('site_acls', function (view) {
     // view.columns([]);
     var select = knex('connection_policies').select([
@@ -127,5 +129,6 @@ exports.down = function(knex) {
       table.dropColumn('sort');
     }).then(function ( ) {
     });
+  });
   });
 };

@@ -30,7 +30,7 @@ function create (env, ctx) {
 
 }
 
-exports = create;
+module.exports = exports = create;
 
 if (!module.parent) {
   var env = require('./env');

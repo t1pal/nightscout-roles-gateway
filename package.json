@@ -20,5 +20,10 @@
     "restify": "^8.6.1",
     "short-unique-id": "^4.4.4",
     "sqlite3": "^5.0.6"
+  },
+  "devDependencies": {
+    "chai": "^4.3.6",
+    "chai-http": "^4.3.0",
+    "mocha": "^9.2.2"
   }
 }

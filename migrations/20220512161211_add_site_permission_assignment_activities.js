@@ -174,10 +174,10 @@ exports.up = function(knex) {
             cp.group_id,
             count(group_id) AS dups,
             0 as min,
-            row_number( ) OVER ( PARTITION BY cp.site_id ) AS num
+            row_number( ) OVER ( PARTITION BY cp.site_id ORDER BY cp.sort ) AS num
             FROM site_policy_overview as cp
             WHERE cp.site_id = NEW.site_id
-            GROUP BY cp.site_id, cp.group_id
+            GROUP BY cp.site_id, cp.group_id, cp.sort
 
           ), groups_per_site AS (
 

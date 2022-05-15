@@ -5,22 +5,22 @@
 exports.up = function(knex) {
   return knex.schema.createViewOrReplace('site_policy_overview', function (view) {
     var stuff = `
+    `;
+    var select = knex.raw(`
       WITH group_policy_summary AS (
-        SELECT id, owner_ref, expected_name, group_id, group_name
+        SELECT owner_ref, expected_name, group_id -- , group_name
           , count(distinct(identity_type)) as identity_types
           , count(distinct(identity_spec)) as identity_specs
           , count(distinct(group_spec_id)) as group_spec_ids
           , count(distinct(group_id)) as groups
           , count(distinct(schedule_id)) as schedules
           , count(distinct(id)) as total
-          , COALESCE(sort, 0) as sort
+          -- , COALESCE(sort, 0) as sort
 
         FROM site_policy_details
-        GROUP BY owner_ref, expected_name, id,
-          group_id, group_name, sort
+        GROUP BY owner_ref, expected_name, -- id,
+          group_id  -- , group_name, sort
       )
-    `;
-    var select = knex.raw(`
       SELECT
         connection_policies.id,
         groups.owner_ref,
@@ -38,12 +38,20 @@ exports.up = function(knex) {
         scheduled_policies.schedule_type as schedule_type,
         scheduled_policies.fill_pattern,
         scheduled_policies.schedule_segments,
-        scheduled_policies.schedule_description
+        scheduled_policies.schedule_description,
+        policies.identity_types,
+        policies.identity_specs,
+        policies.groups,
+        policies.schedules,
+        policies.total
       FROM connection_policies
       JOIN group_definitions as groups
         ON groups.id = connection_policies.group_definition_id
       JOIN registered_sites as sites
         ON sites.id = connection_policies.site_id
+      INNER JOIN group_policy_summary AS policies
+        ON policies.group_id = groups.id
+        AND policies.expected_name = sites.expected_name
       LEFT JOIN scheduled_policies
         ON scheduled_policies.policy_id = connection_policies.id
       ORDER BY sort

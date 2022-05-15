@@ -328,7 +328,24 @@ exports.up = function(knex) {
             schedule_description
           )
 
-        SELECT new_values.*
+        SELECT
+          new_values.id,
+          new_values.owner_ref,
+          new_values.expected_name,
+          new_values.site_id,
+          new_values.group_id,
+          new_values.group_name,
+          new_values.policy_name,
+          new_values.policy_note,
+          new_values.policy_type,
+          new_values.policy_spec,
+          new_values.sort,
+          new_values.schedule_id,
+          new_values.schedule_name,
+          new_values.schedule_type,
+          new_values.fill_pattern,
+          new_values.schedule_segments,
+          new_values.schedule_description
         FROM new_values
         WHERE NOT EXISTS (SELECT 1
           FROM update_policy

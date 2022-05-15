@@ -212,9 +212,9 @@ exports.up = function(knex) {
               CASE
               WHEN cp.id = candidate.id THEN
                 find_max.add
-              WHEN NEW.resort > 0 AND find_max.num >= (candidate.sort) THEN
+              WHEN NEW.resort > 0 AND find_max.sub >= (candidate.sort) THEN
                 find_max.sub
-              WHEN NEW.resort < 0 AND find_max.num <= (candidate.sort) THEN
+              WHEN NEW.resort < 0 AND find_max.sub >= (candidate.sort) THEN
                 find_max.sub
               ELSE
                 COALESCE(find_max.num, cp.sort, 0)

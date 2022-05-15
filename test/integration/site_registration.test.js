@@ -159,7 +159,7 @@ describe("Integration Test", function ( ) {
           expect(err).to.equal(null);
           expect(res).to.have.status(200);
           expect(res).to.be.json;
-          console.log('FACTORY DETAILS', res.body);
+          // console.log('FACTORY DETAILS', res.body);
           done( );
         });
 

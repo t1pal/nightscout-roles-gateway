@@ -287,7 +287,7 @@ exports.up = function(knex) {
           , candidate.fill_pattern
           , candidate.schedule_segments
           , candidate.schedule_description
-          WHERE prior.schedule_id != NEW.schedule_id
+          WHERE true -- prior.schedule_id != NEW.schedule_id
             AND prior.schedule_id IS NULL
             AND NEW.schedule_id IS NOT NULL
             AND NEW.schedule_type IS NOT NULL

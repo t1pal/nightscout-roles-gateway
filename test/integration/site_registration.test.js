@@ -227,11 +227,12 @@ describe("Integration Test", function ( ) {
       });
 
 
-    });
 
 
-    describe("some changes with existing site", function ( ) {
-      // before(function ( ) { });
+      describe("some changes with existing site", function ( ) {
+        // before(function ( ) { });
+      });
+
     });
 
     after(function (done) {

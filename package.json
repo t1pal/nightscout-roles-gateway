@@ -4,7 +4,7 @@
   "description": "A cloud native oauth 2.0 rbac controller for Nightscout.",
   "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "./node_modules/.bin/mocha --recursive test"
   },
   "author": "Ben West",
   "license": "MIT",

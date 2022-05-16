@@ -3,6 +3,7 @@
  * @returns { Promise<void> }
  */
 exports.up = function(knex) {
+  return Promise.resolve(true);
   return knex.schema.alterTable('connection_policies', function (table) {
     table.integer('sort')
       .comment("Sort order for each group of site policies.");
@@ -18,10 +19,10 @@ exports.up = function(knex) {
         CREATE OR REPLACE FUNCTION initialize_connection_policy_sort() RETURNS trigger AS $$
         BEGIN
           IF NEW.sort IS NULL THEN
-            NEW.sort = (SELECT count(*) FROM connection_policies
+            NEW.sort = COALESCE((SELECT count(*) FROM connection_policies
             WHERE site_id = NEW.site_id
             GROUP BY site_id 
-            ) ;
+            ), 0) ;
           END IF;
         END;
         $$ LANGUAGE plpgsql;

@@ -164,6 +164,75 @@ describe("Integration Test", function ( ) {
         });
 
     });
+    var saved_group;
+
+    describe("groups exercise", function ( ) {
+
+      var group_A_req = {
+        nickname: "A Group A"
+      , identity_type: 'invite'
+      , identity_spec: 'magiclink0'
+      };
+
+      var group_B_req = {
+        nickname: "B Group B"
+      , includes : [
+        { identity_type: 'facebook-group-member'
+        , identity_spec: 'my-group'
+        }
+      , { identity_type: 'twitter-user'
+        , identity_spec: '@me'
+        }
+      ]
+      };
+
+      var group_C_req = {
+        nickname: "C Group C"
+      , identity_type: 'email-example'
+      , includes : {
+        identity_spec: [ 'a@a.com', 'b@b.com' ]
+      }
+      };
+
+      var group_D_req = {
+        nickname: "D Group D"
+      , includes : {
+        identity_spec: [ 'a@a.com', 'b@b.com' ]
+      , identity_type: [ 'email', 'email' ]
+      }
+      };
+
+      var group_E_req = {
+        nickname: "E Group E"
+      , includes: {
+        identity_type: 'invite'
+      , identity_spec: 'magiclink0'
+      }
+      };
+
+
+      // before(function ( ) { })
+      it ("create a group", function (done) {
+        chai.request(server)
+          .post('/api/v1/owner/' + reg.Site.owner_ref + '/groups')
+          .send(group_B_req)
+          .end(function (err, res) {
+            expect(err).to.equal(null);
+            expect(res).to.have.status(200);
+            expect(res).to.be.json;
+            console.log('GROUP CREATE', res.body);
+            saved_group = res.body.inserted;
+            done( );
+          });
+      });
+
+
+    });
+
+
+    describe("some changes with existing site", function ( ) {
+      // before(function ( ) { });
+    });
 
     after(function (done) {
         my.store.migrate.rollback( )

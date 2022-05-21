@@ -9,6 +9,7 @@
   "author": "Ben West",
   "license": "MIT",
   "dependencies": {
+    "@ory/kratos-client": "^0.9.0-alpha.3",
     "bootevent": "0.0.1",
     "jsonpath-plus": "^6.0.1",
     "knex": "^2.0.0",

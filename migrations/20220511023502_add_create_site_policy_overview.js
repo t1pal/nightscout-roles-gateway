@@ -90,9 +90,9 @@ exports.up = function(knex) {
             AND sites.owner_ref = NEW.owner_ref
             AND NOT (NEW.id IS NULL OR NEW.group_id IS NULL or NEW.policy_type IS NULL or NEW.policy_spec IS NULL)
             AND NOT EXISTS (
-              SELECT 1 FROM connection_policies
-                WHERE groups.id = connection_policies.group_definition_id
-                  AND sites.expected_name = NEW.expected_name
+              SELECT 1 FROM site_policy_overview AS _spo
+                WHERE _spo.group_id = NEW.group_id
+                  AND _spo.expected_name = NEW.expected_name
               )
           ;
 

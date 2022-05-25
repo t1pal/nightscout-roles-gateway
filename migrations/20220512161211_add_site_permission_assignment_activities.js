@@ -97,6 +97,7 @@ exports.up = function(knex) {
              ON prior.group_id = groups.id
             AND prior.site_id = sites.id
           WHERE sites.expected_name = NEW.expected_name
+            AND sites.owner_ref = NEW.owner_ref
             AND groups.id = NEW.group_id
         )
         SELECT * INTO valid
@@ -297,14 +298,14 @@ exports.up = function(knex) {
         END IF;
 
         WITH new_values AS (
-          SELECT candidate.*
+          SELECT NEW.*
         ),
         update_policy AS (
-          SELECT candidate.*
+          SELECT _spo.*
           FROM
           site_policy_overview as _spo
             WHERE _spo.id = NEW.policy_id
-              
+
         )
         INSERT INTO site_policy_overview
 
@@ -314,7 +315,7 @@ exports.up = function(knex) {
             expected_name,
             site_id,
             group_id,
-            group_name,
+            -- group_name,
             policy_name,
             policy_note,
             policy_type,
@@ -334,7 +335,7 @@ exports.up = function(knex) {
           new_values.expected_name,
           new_values.site_id,
           new_values.group_id,
-          new_values.group_name,
+          -- new_values.group_name,
           new_values.policy_name,
           new_values.policy_note,
           new_values.policy_type,
@@ -347,10 +348,16 @@ exports.up = function(knex) {
           new_values.schedule_segments,
           new_values.schedule_description
         FROM new_values
-        WHERE NOT EXISTS (SELECT 1
+        WHERE NEW.policy_id = NEW.id
+          AND NEW.operation = 'add'
+          /*
+        NOT EXISTS (
+          SELECT 1
           FROM update_policy
           WHERE update_policy.id = NEW.policy_id
-        );
+        )
+          */
+        ;
         RETURN NEW;
       END;
       $$ LANGUAGE plpgsql;

@@ -218,7 +218,7 @@ exports.up = function(knex) {
               WHEN NEW.resort < 0 AND find_max.sub >= (candidate.sort) THEN
                 find_max.sub
               ELSE
-                COALESCE(find_max.num, cp.sort, 0)
+                COALESCE(find_max.num, cp.sort, 1)
               END as new_sort
             FROM connection_policies as cp
             JOIN find_max
@@ -241,7 +241,11 @@ exports.up = function(knex) {
           NULL;
         END IF;
 
-        IF candidate.id IS NOT NULL THEN
+        IF candidate.id IS NOT NULL AND NEW.operation = 'delete' THEN
+          DELETE FROM connection_policies WHERE connection_policies.id = candidate.id;
+        END IF;
+
+        IF candidate.id IS NOT NULL AND NEW.operation != 'delete' THEN
           UPDATE connection_policies 
             SET
             group_definition_id=candidate.group_id,

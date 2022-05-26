@@ -27,8 +27,9 @@ exports.up = function(knex) {
             NEW.sort = COALESCE((SELECT count(*) FROM connection_policies
             WHERE site_id = NEW.site_id
             GROUP BY site_id
-            ), 0) ;
+            ), 0) + 1 ;
           END IF;
+        RETURN NEW;
         END;
         $$ LANGUAGE plpgsql;
 

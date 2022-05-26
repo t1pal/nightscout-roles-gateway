@@ -212,7 +212,7 @@ exports.up = function(knex) {
               cp.sort AS old_sort,
               CASE
               WHEN cp.id = candidate.id THEN
-                find_max.add
+                LEAST(GREATEST(find_max.add, 1), find_max.count)
               WHEN NEW.resort > 0 AND find_max.sub >= (candidate.sort) THEN
                 find_max.sub
               WHEN NEW.resort < 0 AND find_max.sub >= (candidate.sort) THEN

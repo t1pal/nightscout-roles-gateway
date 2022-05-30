@@ -7,6 +7,17 @@ var env = {
 , kratos: {
   api: process.env.KRATOS_API || 'http://kratos-gw.service.consul:4433'
   }
+, hydra: {
+  api: process.env.HYDRA_API || 'http://hydra-gw-admin.service.consul:4445'
+
+  }
+, gateway: {
+    apex: process.env.GATEWAY_APEX || 'gateway.dummy0'
+  , www: process.env.GATEWAY_WWW || 'https://gateway.dummy0'
+  }
+, self: {
+    api: process.env.SELF_API || 'http://api.dummy0:3883'
+  }
 };
 
 

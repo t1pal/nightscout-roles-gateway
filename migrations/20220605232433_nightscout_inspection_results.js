@@ -21,6 +21,7 @@ exports.up = function(knex) {
     return knex.raw(`
     `)
     .then(function ( ) {
+      return knex.raw(config.onUpdateTrigger('nightscout_inspection_results'));
     });
 
   });

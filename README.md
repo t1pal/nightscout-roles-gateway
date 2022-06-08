@@ -29,7 +29,7 @@ type of authorization permitted for that user.  These authorization permissions
 may be binary such as `allow` and `deny`, or may include specific Nighscout
 JWT, and may be expressed on a weekly schedule.
 
-The gateway _TODO:will be/is_ Nightscout-aware, and will require use of the
+The gateway is Nightscout-aware, and requires use of the
 `API_SECRET` along with site registration in order to work properly.  The
 `API_SECRET` is used to verify the authenticity of the registered Nightscout
 site, to triage and manage JWT authorizations, and to enable classic mobile
@@ -71,7 +71,8 @@ Enable additional brokerage services for Nightscout community:
 * IFTTT
 * Twilio/Glucose2Phone
 * pushover
-* 
+* mobile apps can select available Nightscout after secure log in
+  * no more copy/paste "strings"
 
 
 

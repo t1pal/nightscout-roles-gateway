@@ -25,8 +25,6 @@ exports.up = function(knex) {
     });
 
   });
-  
-  
 };
 
 /**

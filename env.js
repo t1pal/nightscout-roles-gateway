@@ -18,9 +18,11 @@ var env = {
 , self: {
     api: process.env.SELF_API || 'http://api.dummy0:3883'
   }
+, upstream: {
+    policy: process.env.UPSTREAM_POLICY || 'loose' // 'nightscout'
+  , strictly_nightscout: (process.env.UPSTREAM_POLICY|| '').trim( ) == 'nightscout'
+}
 };
-
-
 module.exports = env;
 
 if (!module.parent) {

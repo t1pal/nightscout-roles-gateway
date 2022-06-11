@@ -12,7 +12,7 @@ exports.up = function(knex) {
         $$ LANGUAGE plpgsql;
 
 
-        CREATE OR REPLACE TRIGGER delete_inclusion_specs_policy
+        CREATE TRIGGER delete_inclusion_specs_policy
         AFTER DELETE ON group_inclusion_specs
         FOR EACH ROW
         EXECUTE PROCEDURE force_leave_group();

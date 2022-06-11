@@ -18,12 +18,12 @@ exports.up = function(knex) {
         END;
         $$ LANGUAGE plpgsql;
 
-        CREATE OR REPLACE TRIGGER delete_group_policy
+        CREATE TRIGGER delete_group_policy
         BEFORE DELETE ON group_definitions 
         FOR EACH ROW
         EXECUTE PROCEDURE delete_matching_inclusions();
 
-        CREATE OR REPLACE TRIGGER delete_connection_policy
+        CREATE TRIGGER delete_connection_policy
         BEFORE DELETE ON connection_policies
         FOR EACH ROW
         EXECUTE PROCEDURE delete_matching_policy_data();

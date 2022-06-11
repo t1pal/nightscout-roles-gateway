@@ -15,7 +15,7 @@ exports.up = function(knex) {
     $$;
 
 
-    CREATE EXTENSION IF NOT EXISTS pgcrypto;
+    -- CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
     CREATE OR REPLACE FUNCTION sha1_encode (bytea) returns text AS $$
       SELECT encode(digest($1, 'sha1'), 'hex')

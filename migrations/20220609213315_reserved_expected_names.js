@@ -32,17 +32,17 @@ exports.up = function(knex) {
         END;
         $$ LANGUAGE plpgsql;
 
-        CREATE OR REPLACE TRIGGER auto_id_reserved_name_insert
+        CREATE TRIGGER auto_id_reserved_name_insert
         BEFORE INSERT ON reserved_expected_names
         FOR EACH ROW
         EXECUTE PROCEDURE hash_id_reservation();
 
-        CREATE OR REPLACE TRIGGER check_reserved_names_registered_site_insert
+        CREATE TRIGGER check_reserved_names_registered_site_insert
         BEFORE INSERT ON registered_sites
         FOR EACH ROW
         EXECUTE PROCEDURE check_site_reserved_name();
 
-        CREATE OR REPLACE TRIGGER check_reserved_names_registered_site_update
+        CREATE TRIGGER check_reserved_names_registered_site_update
         BEFORE UPDATE ON registered_sites
         FOR EACH ROW
         WHEN (NEW.expected_name IS DISTINCT FROM OLD.expected_name)

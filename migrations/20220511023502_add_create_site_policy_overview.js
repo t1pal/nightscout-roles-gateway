@@ -247,12 +247,12 @@ exports.up = function(knex) {
         DROP TRIGGER IF EXISTS initialize_site_policy_details_insert_trigger ON site_policy_details CASCADE;
         DROP TRIGGER IF EXISTS upsert_site_policy_details_update_trigger ON site_policy_details CASCADE;
 
-        CREATE OR REPLACE TRIGGER initialize_site_policy_overview_insert_trigger
+        CREATE TRIGGER initialize_site_policy_overview_insert_trigger
         INSTEAD OF INSERT ON site_policy_overview
         FOR EACH ROW
         EXECUTE PROCEDURE create_site_policy_details();
 
-        CREATE OR REPLACE TRIGGER upsert_site_policy_overview_update_trigger
+        CREATE TRIGGER upsert_site_policy_overview_update_trigger
         INSTEAD OF UPDATE ON site_policy_overview
         FOR EACH ROW
         EXECUTE PROCEDURE update_site_policy_details();

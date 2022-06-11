@@ -366,11 +366,11 @@ exports.up = function(knex) {
       END;
       $$ LANGUAGE plpgsql;
 
-      CREATE OR REPLACE TRIGGER before_insertion_permission_activity_trigger
+      CREATE TRIGGER before_insertion_permission_activity_trigger
       BEFORE INSERT ON permission_assignment_activities
       FOR EACH ROW EXECUTE PROCEDURE before_insert_permission_assignment_activity();
 
-      CREATE OR REPLACE TRIGGER after_insertion_permission_activity_trigger
+      CREATE TRIGGER after_insertion_permission_activity_trigger
       AFTER INSERT ON permission_assignment_activities
       FOR EACH ROW EXECUTE PROCEDURE after_insert_permission_assignment_activity();
 

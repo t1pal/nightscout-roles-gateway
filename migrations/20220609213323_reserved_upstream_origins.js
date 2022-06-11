@@ -31,17 +31,17 @@ exports.up = function(knex) {
         END;
         $$ LANGUAGE plpgsql;
 
-        CREATE OR REPLACE TRIGGER auto_id_reserved_upstream_insert
+        CREATE TRIGGER auto_id_reserved_upstream_insert
         BEFORE INSERT ON reserved_upstream_origin
         FOR EACH ROW
         EXECUTE PROCEDURE hash_id_upstream();
 
-        CREATE OR REPLACE TRIGGER check_reserved_upstream_origin_registered_site_insert
+        CREATE TRIGGER check_reserved_upstream_origin_registered_site_insert
         BEFORE INSERT ON registered_sites
         FOR EACH ROW
         EXECUTE PROCEDURE check_site_reserved_upstream();
 
-        CREATE OR REPLACE TRIGGER check_reserved_upstream_origin_registered_site_update
+        CREATE TRIGGER check_reserved_upstream_origin_registered_site_update
         BEFORE UPDATE ON registered_sites
         FOR EACH ROW
         WHEN (NEW.upstream_origin IS DISTINCT FROM OLD.upstream_origin)

@@ -71,7 +71,7 @@ exports.up = function(knex) {
         $$ LANGUAGE plpgsql;
 
 
-        CREATE OR REPLACE TRIGGER nightscout_inspection_results_certificate_insert
+        CREATE TRIGGER nightscout_inspection_results_certificate_insert
         AFTER INSERT ON nightscout_inspection_results
         FOR EACH ROW
         EXECUTE PROCEDURE upsert_nightscout_results_certificate();
@@ -85,7 +85,7 @@ exports.up = function(knex) {
         $$ LANGUAGE plpgsql;
 
 
-        CREATE OR REPLACE TRIGGER upstream_origin_changes_invalidate_results_certificate_trigger
+        CREATE TRIGGER upstream_origin_changes_invalidate_results_certificate_trigger
         AFTER UPDATE ON registered_sites
         FOR EACH ROW
         WHEN ( NEW.upstream_origin IS DISTINCT FROM OLD.upstream_origin )

@@ -71,6 +71,7 @@ exports.up = function(knex) {
         $$ LANGUAGE plpgsql;
 
 
+        DROP TRIGGER IF EXISTS nightscout_inspection_results_certificate_insert ON nightscout_inspection_results CASCADE;
         CREATE TRIGGER nightscout_inspection_results_certificate_insert
         AFTER INSERT ON nightscout_inspection_results
         FOR EACH ROW
@@ -85,6 +86,7 @@ exports.up = function(knex) {
         $$ LANGUAGE plpgsql;
 
 
+        DROP TRIGGER IF EXISTS upstream_origin_changes_invalidate_results_certificate_trigger ON registered_sites CASCADE;
         CREATE TRIGGER upstream_origin_changes_invalidate_results_certificate_trigger
         AFTER UPDATE ON registered_sites
         FOR EACH ROW
@@ -109,6 +111,7 @@ exports.down = function(knex) {
   .then(function ( ) {
     return knex.raw(`
       DROP TRIGGER IF EXISTS nightscout_inspection_results_certificate_insert ON nightscout_inspection_results CASCADE;
+      DROP TRIGGER IF EXISTS upstream_origin_changes_invalidate_results_certificate_trigger ON registered_sites CASCADE;
       DROP FUNCTION IF EXISTS upsert_nightscout_results_certificate() CASCADE;
     `)
     .then(function (resp) {

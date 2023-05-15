@@ -7,12 +7,12 @@ EXPOSE 3883
 
 RUN apt-get update -y
 RUN apt-get install -y wget curl git sudo
-RUN curl -sL https://deb.nodesource.com/setup_12.x | sudo bash -
+RUN curl -sL https://deb.nodesource.com/setup_16.x | sudo bash -
 
 RUN apt-get update
 RUN apt-get install -y python software-properties-common nodejs build-essential nginx ruby
 RUN npm install -g n
-RUN n 12.16.2
+RUN n 16
 RUN n prune
 RUN npm install -g node-gyp
 

@@ -7,6 +7,7 @@ This directory contains the API documentation for the Nightscout Roles Gateway (
 - `openapi.yaml` - OpenAPI 3.0 specification for the REST API
 - `access-modes.md` - Documentation of the three orthogonal access conditions
 - `criteria-system.md` - BYOD Nightscout validation pipeline and security
+- `oauth-client-lifecycle.md` - OAuth client management, invitation/RSVP flow, and Hydra integration
 - `policies-and-permissions.md` - Groups, connection policies, scheduled access, and ACL resolution
 - `site-registration-workflow.md` - Site registration lifecycle, endpoints, and auto-created resources
 
@@ -137,7 +138,6 @@ This OpenAPI specification is a skeleton that covers the main endpoint categorie
 ### TODO: Additional Endpoints to Document
 
 - Complete entity filtering and search
-- OAuth client lifecycle
 - Token management
 - Activity logging
 - Detailed request/response schemas
@@ -148,6 +148,7 @@ This OpenAPI specification is a skeleton that covers the main endpoint categorie
 - Policy assignment and permissions → See `policies-and-permissions.md`
 - Scheduled policies → See `policies-and-permissions.md`
 - Site registration workflow → See `site-registration-workflow.md`
+- OAuth client lifecycle → See `oauth-client-lifecycle.md`
 
 ## Contributing
 

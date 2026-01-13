@@ -1,6 +1,6 @@
 
 var env = {
-  PORT: parseInt(process.env.PORT || '3883')
+  PORT: parseInt(process.env.PORT || '5000')
 , HOSTNAME: process.env.BIND_IFACE || null
 , KNEX_CONNECT: process.env.KNEX_CONNECT
 , BACKEND_ENV: process.env.BACKEND_ENV

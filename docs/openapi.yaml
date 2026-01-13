@@ -1,0 +1,390 @@
+openapi: 3.0.3
+info:
+  title: Nightscout Roles Gateway API
+  description: |
+    A cloud-native RBAC controller for Nightscout. NRG provides a REST API to store 
+    and enforce scheduled group policies for registered Nightscout sites.
+    
+    This microservice manages sites, groups, and scheduling permission types for 
+    Nightscout deployments. It provides authentication and authorization services 
+    for load balancers like NGINX using `auth_request` directives.
+  version: 0.0.1
+  contact:
+    name: Ben West
+  license:
+    name: MIT
+
+servers:
+  - url: http://localhost:5000
+    description: Development server
+
+tags:
+  - name: Status
+    description: Health check and status endpoints
+  - name: About
+    description: Server and database introspection
+  - name: Entities
+    description: Generic entity CRUD operations
+  - name: Objects
+    description: Object management by kind
+  - name: Workflows
+    description: Site registration workflows
+  - name: Owner
+    description: Owner administration endpoints
+  - name: Groups
+    description: Group management and membership
+  - name: Clients
+    description: OAuth client management
+  - name: Privy
+    description: User identity and privacy endpoints
+  - name: Warden
+    description: Authentication gateway for load balancers
+  - name: Nightscout
+    description: Nightscout-specific audit and criteria
+
+paths:
+  /api/v1/status:
+    get:
+      tags:
+        - Status
+      summary: Health check
+      description: Returns OK status if the server is running
+      responses:
+        '200':
+          description: Server is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+
+  /api/v1/status/database:
+    get:
+      tags:
+        - Status
+      summary: Database health check
+      description: Verifies database connectivity
+      responses:
+        '200':
+          description: Database connection successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: integer
+                    example: 1
+
+  /api/v1/about/server:
+    get:
+      tags:
+        - About
+      summary: Server debug information
+      description: Returns server configuration and debug details
+      responses:
+        '200':
+          description: Server debug info
+
+  /api/v1/about/database:
+    get:
+      tags:
+        - About
+      summary: List database tables
+      description: Returns list of tables in the database
+      responses:
+        '200':
+          description: List of table names
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+
+  /api/v1/about/database/{table}:
+    get:
+      tags:
+        - About
+      summary: Get table info
+      description: Returns column and schema information for a table
+      parameters:
+        - name: table
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Table schema information
+
+  /api/v1/objects/{kind}:
+    post:
+      tags:
+        - Objects
+      summary: Create a new object
+      parameters:
+        - name: kind
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Object created successfully
+
+  /api/v1/objects/{kind}/{id}:
+    get:
+      tags:
+        - Objects
+      summary: Get object by ID
+      parameters:
+        - name: kind
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Object details
+    put:
+      tags:
+        - Objects
+      summary: Update object by ID
+      parameters:
+        - name: kind
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Object updated
+    delete:
+      tags:
+        - Objects
+      summary: Delete object by ID
+      parameters:
+        - name: kind
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Object deleted
+
+  /api/v1/workflows/site/registrations:
+    get:
+      tags:
+        - Workflows
+      summary: Get registration suggestions
+      responses:
+        '200':
+          description: Registration suggestions
+    post:
+      tags:
+        - Workflows
+      summary: Register a new site
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                expected_name:
+                  type: string
+                  description: The subdomain name for the site
+                owner_ref:
+                  type: string
+                  description: Owner reference identifier
+      responses:
+        '200':
+          description: Site registered successfully
+
+  /api/v1/owner/{owner_ref}/synopsis:
+    get:
+      tags:
+        - Owner
+      summary: Get owner overview
+      parameters:
+        - name: owner_ref
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Owner synopsis with registered sites
+
+  /api/v1/owner/{owner_ref}/groups:
+    get:
+      tags:
+        - Groups
+      summary: List owner's groups
+      parameters:
+        - name: owner_ref
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of groups
+    post:
+      tags:
+        - Groups
+      summary: Create a new group
+      parameters:
+        - name: owner_ref
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+      responses:
+        '200':
+          description: Group created
+
+  /api/v1/nightscout/audit:
+    post:
+      tags:
+        - Nightscout
+      summary: Audit Nightscout site criteria
+      description: Validates and triages Nightscout site authenticity
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Audit results
+
+  /warden/v1/active/backend/for/{expected_name}:
+    get:
+      tags:
+        - Warden
+      summary: Get active backend for site
+      description: |
+        Used by load balancers (NGINX) to verify site authenticity and user authorization.
+        Returns the upstream URI in x-upstream-origin header when authorized.
+      parameters:
+        - name: expected_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The subdomain name to authorize
+      responses:
+        '200':
+          description: Authorization decision with upstream origin
+          headers:
+            x-upstream-origin:
+              schema:
+                type: string
+              description: The upstream URI for reverse proxy
+        '403':
+          description: Access denied
+    head:
+      tags:
+        - Warden
+      summary: Check backend availability (HEAD)
+      parameters:
+        - name: expected_name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Backend available
+
+components:
+  schemas:
+    Error:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+
+    Site:
+      type: object
+      properties:
+        id:
+          type: string
+        expected_name:
+          type: string
+        owner_ref:
+          type: string
+        full_domain:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    Group:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        owner_ref:
+          type: string
+        description:
+          type: string
+
+  securitySchemes:
+    ApiSecret:
+      type: apiKey
+      in: header
+      name: api-secret
+      description: Nightscout API_SECRET for site authentication

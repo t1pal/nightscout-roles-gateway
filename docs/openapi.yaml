@@ -5,9 +5,40 @@ info:
     A cloud-native RBAC controller for Nightscout. NRG provides a REST API to store 
     and enforce scheduled group policies for registered Nightscout sites.
     
-    This microservice manages sites, groups, and scheduling permission types for 
-    Nightscout deployments. It provides authentication and authorization services 
-    for load balancers like NGINX using `auth_request` directives.
+    ## Architecture Overview
+    
+    NRG operates as part of a multi-component system:
+    
+    - **WWW Viewer Frontend**: A web interface that allows authenticated viewing of 
+      configured Nightscout instances at vanity URLs (e.g., `yoursite.example.com`).
+    - **Control Panel**: An administrative interface (e.g., T1Pal) that uses this REST API 
+      to register sites, configure policies, manage groups, and set up access rules.
+    - **NGINX Load Balancer**: Uses NRG's Warden endpoints via `auth_request` directives 
+      to verify site authenticity, authorize users, and obtain upstream URIs for proxying.
+    
+    ## Access Modes
+    
+    NRG supports three orthogonal access conditions for registered Nightscout sites:
+    
+    1. **Anonymous/Public Access**: The site is available at its vanity URL for anyone. 
+       Standard Nightscout authentication (API secret or token) applies for privileged operations.
+    
+    2. **Identity-Mapped Access**: Visitors must be logged in and consent to being in the 
+       usage log. User identities or groups can be mapped to Nightscout authorization tokens 
+       (nsjwt shiros), optionally on a weekly schedule.
+    
+    3. **Legacy Device Escape Hatch**: Allows uploaders and legacy devices using the correct 
+       API secret to bypass login requirements while identity features remain active for 
+       web visitors (`exempt_matching_api_secret`).
+    
+    ## BYOD Nightscout Validation
+    
+    The system supports "Bring Your Own Nightscout" (BYOD), allowing users to register 
+    their existing Nightscout instances. To prevent misuse as an open proxy, NRG includes 
+    a criteria-based validation system that audits Nightscout instances for authenticity, 
+    liveness, and proper configuration before allowing registration.
+    
+    See the Nightscout audit endpoints for details on the validation criteria.
   version: 0.0.1
   contact:
     name: Ben West
@@ -292,16 +323,100 @@ paths:
       tags:
         - Nightscout
       summary: Audit Nightscout site criteria
-      description: Validates and triages Nightscout site authenticity
+      description: |
+        Validates and triages Nightscout site authenticity for BYOD (Bring Your Own Nightscout) 
+        registration. This endpoint is a security gate that prevents the system from being 
+        misused as an open proxy by validating that the provided upstream is a legitimate 
+        Nightscout instance.
+        
+        ## Validation Pipeline
+        
+        The audit runs through three inspection stages:
+        
+        1. **Static Analysis**: Validates API secret syntax (minimum length) and URL format 
+           (valid hostname).
+        
+        2. **API Liveness Check**: Attempts to reach the Nightscout `/api/v1/status.json` 
+           endpoint to verify the instance is reachable and responding.
+        
+        3. **Authenticated API Check**: Verifies the API secret works by making an 
+           authenticated request to the status endpoint.
+        
+        ## Criteria Structure
+        
+        Each check produces a criterium with:
+        - `group`: Category of the check (e.g., "Nightscout API Secret", "Nightscout URL")
+        - `property`: What is being checked
+        - `criteria`: The requirement being evaluated
+        - `outcome`: Description of the actual result
+        - `passing`: Boolean indicating if the check passed
+        - `mandatory`: If true, failure blocks registration; if false, it's a warning
+        
+        ## Response
+        
+        Returns a synopsis with overall status (`OK` or `not ok`), `acceptable` boolean, 
+        and detailed breakdown of passing checks, warnings, and rejections.
       requestBody:
-        required: true
+        required: false
         content:
           application/json:
             schema:
               type: object
+              properties:
+                upstream_origin:
+                  type: string
+                  description: The full URL of the Nightscout instance to validate. Optional when re-auditing an existing registration.
+                  example: "https://my-nightscout.herokuapp.com"
+                api_secret:
+                  type: string
+                  description: The API_SECRET configured on the Nightscout instance. Optional when re-auditing an existing registration (retrieved from stored secrets).
       responses:
         '200':
-          description: Audit results
+          description: Audit results with synopsis and detailed criteria outcomes
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  synopsis:
+                    type: object
+                    properties:
+                      txt:
+                        type: string
+                        description: Human-readable summary
+                      status:
+                        type: string
+                        enum: [OK, "not ok"]
+                      acceptable:
+                        type: boolean
+                        description: True if no mandatory criteria failed
+                      details:
+                        type: object
+                        properties:
+                          passing:
+                            type: integer
+                          warning:
+                            type: integer
+                          rejects:
+                            type: integer
+                  audit:
+                    type: array
+                    description: Individual criteria results
+                    items:
+                      type: object
+                      properties:
+                        group:
+                          type: string
+                        property:
+                          type: string
+                        criteria:
+                          type: string
+                        outcome:
+                          type: string
+                        passing:
+                          type: boolean
+                        mandatory:
+                          type: boolean
 
   /warden/v1/active/backend/for/{expected_name}:
     get:

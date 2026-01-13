@@ -5,6 +5,69 @@ This directory contains the API documentation for the Nightscout Roles Gateway (
 ## Files
 
 - `openapi.yaml` - OpenAPI 3.0 specification for the REST API
+- `access-modes.md` - Documentation of the three orthogonal access conditions
+- `criteria-system.md` - BYOD Nightscout validation pipeline and security
+
+## Architecture
+
+NRG operates as part of a multi-component system designed to provide flexible, secure access to Nightscout instances:
+
+```
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│  Control Panel  │     │   WWW Viewer    │     │ Legacy Devices  │
+│    (T1Pal)      │     │   Frontend      │     │   (Uploaders)   │
+└────────┬────────┘     └────────┬────────┘     └────────┬────────┘
+         │                       │                       │
+         │ REST API              │ Vanity URL            │ API Secret
+         ▼                       ▼                       ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                        NGINX Load Balancer                       │
+│                    (auth_request → Warden API)                   │
+└────────────────────────────────┬────────────────────────────────┘
+                                 │
+                                 ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                  Nightscout Roles Gateway (NRG)                  │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────────────┐ │
+│  │ Warden   │  │ Policies │  │ Criteria │  │ Registrations    │ │
+│  │ Gateway  │  │ Engine   │  │ Auditor  │  │ Workflow         │ │
+│  └──────────┘  └──────────┘  └──────────┘  └──────────────────┘ │
+└────────────────────────────────┬────────────────────────────────┘
+                                 │
+                                 ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                   Registered Nightscout Instances                │
+│                     (BYOD or Managed)                            │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Components
+
+- **Control Panel**: Administrative interface for site registration, policy configuration, and group management. Uses the REST API to configure access rules.
+
+- **WWW Viewer**: Web frontend providing authenticated viewing of Nightscout instances at vanity URLs.
+
+- **NGINX Load Balancer**: Routes requests to registered Nightscout instances. Uses `auth_request` directives to call NRG's Warden API for authorization decisions.
+
+- **NRG Core**: This service, providing:
+  - **Warden Gateway**: NGINX-facing endpoints for authorization decisions
+  - **Policies Engine**: Evaluates access based on identity, groups, and schedules
+  - **Criteria Auditor**: Validates BYOD Nightscout instances (see `criteria-system.md`)
+  - **Registrations Workflow**: Manages site registration lifecycle
+
+### Access Modes
+
+NRG supports three orthogonal access conditions. See `access-modes.md` for full details:
+
+| Mode | Description |
+|------|-------------|
+| **Anonymous** | Public access at vanity URL |
+| **Identity-Mapped** | Login required with consent logging |
+| **Legacy Escape Hatch** | API secret bypasses login for uploaders |
+
+### BYOD Security
+
+When users bring their own Nightscout instances, NRG validates them through a criteria-based audit system to prevent misuse as an open proxy. See `criteria-system.md` for the validation pipeline.
 
 ## Overview
 

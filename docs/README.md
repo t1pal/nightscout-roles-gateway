@@ -8,6 +8,7 @@ This directory contains the API documentation for the Nightscout Roles Gateway (
 - `access-modes.md` - Documentation of the three orthogonal access conditions
 - `criteria-system.md` - BYOD Nightscout validation pipeline and security
 - `policies-and-permissions.md` - Groups, connection policies, scheduled access, and ACL resolution
+- `site-registration-workflow.md` - Site registration lifecycle, endpoints, and auto-created resources
 
 ## Architecture
 
@@ -146,6 +147,7 @@ This OpenAPI specification is a skeleton that covers the main endpoint categorie
 - Group inclusion specifications → See `policies-and-permissions.md`
 - Policy assignment and permissions → See `policies-and-permissions.md`
 - Scheduled policies → See `policies-and-permissions.md`
+- Site registration workflow → See `site-registration-workflow.md`
 
 ## Contributing
 

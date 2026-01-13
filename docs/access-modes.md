@@ -37,6 +37,8 @@ The site is available at its vanity URL (e.g., `yoursite.gateway.example.com`) f
 
 Visitors must be logged in through the identity provider, and their access is logged with consent.
 
+> **Detailed documentation**: See [Policies and Permissions](./policies-and-permissions.md) for complete details on groups, connection policies, schedules, and the consent flow.
+
 ### Behavior
 
 - Visitor must authenticate via OAuth (ORY Kratos/Hydra)
@@ -55,37 +57,37 @@ Visitors must be logged in through the identity provider, and their access is lo
 
 Groups can be defined by various identity traits:
 
-| Identity Type | Description |
-|---------------|-------------|
-| `anonymous` | Any visitor (with or without login) |
-| `email` | Specific email addresses |
-| `organization` | Organization membership claims |
-| `subject` | Specific user IDs |
+| Identity Type | Implementation Status | Description |
+|---------------|----------------------|-------------|
+| `email` | **Implemented** | Exact match after lowercase normalization |
+| `anonymous` | **Implemented** | Any visitor (default audience groups) |
+| `organization` | Planned | Organization membership claims |
+| `subject` | Planned | Specific user IDs |
 
 ### Policy Types
 
 | Policy Type | Description |
 |-------------|-------------|
-| `default` | Standard allow/deny |
-| `nsjwt` | Issue Nightscout JWT token with specific permissions |
+| `default` | Standard allow/deny based on `policy_spec` value |
+| `nsjwt` | Exchange with Nightscout to inject shiro/JWT token with specific permissions |
 
 ### Scheduled Access
 
-Policies can include schedules that define when access is permitted. Schedules are stored in the `scheduled_policies` table with:
+Policies can include schedules that define when access is permitted:
 
-- `schedule_nickname`: Human-readable name
-- `fill_pattern`: Default behavior when not in a scheduled segment
-- `schedule_segments`: Time-based rules (stored as JSON)
+- `schedule_nickname`: Human-readable name (e.g., "School Hours")
+- `fill_pattern`: Comma-separated permission specs (e.g., `"deny,allow,deny"`)
+- `schedule_segments`: Comma-separated offsets in seconds since start of week
 
 ```javascript
 {
-  schedule_nickname: "School Hours",
-  fill_pattern: "deny",
-  schedule_segments: { /* time-based rules */ }
+  schedule_nickname: "Tuesday Afternoon",
+  fill_pattern: "deny,allow,deny",
+  schedule_segments: "0,226800,244800"  // 3 segments = 3 fill patterns
 }
 ```
 
-**Note**: The exact format and evaluation of `schedule_segments` depends on the scheduling implementation. Check `scheduled_policies` table schema for current field definitions.
+**Note**: The number of fill pattern entries should match the number of segments for predictable behavior. See [Policies and Permissions - Scheduled Policies](./policies-and-permissions.md#scheduled-policies) for detailed examples including school hours and weekend access patterns.
 
 ### Example Use Cases
 

@@ -260,7 +260,10 @@ NODE_ENV=test npm test -- --grep "unified_active_site_policies"
 
 **Test Results** (as of January 2026):
 - **132 tests passing, 13 pending** (with `SKIP_HYDRA_TESTS=1 SKIP_KRATOS_TESTS=1`)
-- See `test/quirks/README.md` for documented quirks (INT-SR-Q01, E2E-Q01, E2E-Q02)
+- See `test/quirks/README.md` for documented quirks (INT-SR-Q01, E2E-Q01, E2E-Q02, E2E-Q03, MAS-Q01)
+
+**Portal Endpoint Testing Strategy** (E2E-Q03):
+The `/warden/v1/portal/:subject/backend/for/:expected_name` endpoint bypasses Kratos and takes the subject as a URL parameter. This enables testing identity-mapped access (AM-B01 through AM-B06) without mocking Kratos. See `docs/test-specs/README.md` for details.
 
 **Skipping External Dependency Tests**:
 Set environment variables to skip tests requiring external services:

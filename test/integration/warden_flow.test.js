@@ -10,7 +10,6 @@ const expect = chai.expect;
 
 chai.use(chaiHttp);
 
-const database = require('../setup/database');
 const fixtures = require('../setup/fixtures');
 
 function sha1Hash(secret) {
@@ -41,14 +40,14 @@ describe('Integration: Warden E2E Flow', function() {
   });
 
   beforeEach(async function() {
-    await database.knex.raw('TRUNCATE TABLE registered_sites CASCADE');
-    await database.knex.raw('TRUNCATE TABLE group_definitions CASCADE');
-    await database.knex.raw('TRUNCATE TABLE nightscout_authenticity_records CASCADE');
+    await store.raw('TRUNCATE TABLE registered_sites CASCADE');
+    await store.raw('TRUNCATE TABLE group_definitions CASCADE');
+    await store.raw('TRUNCATE TABLE nightscout_authenticity_records CASCADE');
   });
 
   describe('E2E-01: Anonymous access to public site', function() {
     it('should return 200 with x-upstream-origin when require_identities is false', async function() {
-      const site = await fixtures.createSite(database.knex, {
+      const site = await fixtures.createSite(store, {
         expected_name: 'public-site-e2e01',
         upstream_origin: 'https://my-nightscout.example.com',
         is_enabled: true,
@@ -64,11 +63,49 @@ describe('Integration: Warden E2E Flow', function() {
     });
   });
 
+  describe('E2E-02: Identity access with valid consent', function() {
+    it.skip('should return 200 when authenticated user has consent to site (requires Kratos mock server)', async function() {
+      const site = await fixtures.createSite(store, {
+        expected_name: 'protected-site-e2e02',
+        upstream_origin: 'https://protected-ns.example.com',
+        is_enabled: true,
+        require_identities: true
+      });
+
+      const res = await chai.request(server)
+        .get('/warden/v1/active/backend/for/protected-site-e2e02')
+        .set('Cookie', 'ory_kratos_session=test-session-with-consent')
+        .send();
+
+      expect(res).to.have.status(200);
+      expect(res).to.have.header('x-upstream-origin', 'https://protected-ns.example.com');
+    });
+  });
+
+  describe('E2E-03: Identity access without consent', function() {
+    it.skip('should return 403 when authenticated user lacks consent to site (requires Kratos mock server)', async function() {
+      const site = await fixtures.createSite(store, {
+        expected_name: 'protected-site-e2e03',
+        upstream_origin: 'https://protected-ns.example.com',
+        is_enabled: true,
+        require_identities: true
+      });
+
+      const res = await chai.request(server)
+        .get('/warden/v1/active/backend/for/protected-site-e2e03')
+        .set('Cookie', 'ory_kratos_session=test-session-without-consent')
+        .send();
+
+      expect(res).to.have.status(403);
+      expect(res).to.not.have.header('x-upstream-origin');
+    });
+  });
+
   describe('E2E-04: Legacy device with API-SECRET header', function() {
     it.skip('should return 200 when API-SECRET matches and exempt_matching_api_secret is true (timing issue with async handler chain)', async function() {
       const apiSecret = 'testsupersecret123';
       const hashedSecret = sha1Hash(apiSecret);
-      const site = await fixtures.createSite(database.knex, {
+      const site = await fixtures.createSite(store, {
         expected_name: 'legacy-device-e2e04',
         upstream_origin: 'https://legacy-ns.example.com',
         is_enabled: true,
@@ -88,7 +125,7 @@ describe('Integration: Warden E2E Flow', function() {
 
     it('should return 403 when API-SECRET does not match', async function() {
       const apiSecret = 'testsupersecret123';
-      const site = await fixtures.createSite(database.knex, {
+      const site = await fixtures.createSite(store, {
         expected_name: 'legacy-device-e2e04b',
         upstream_origin: 'https://legacy-ns.example.com',
         is_enabled: true,
@@ -110,7 +147,7 @@ describe('Integration: Warden E2E Flow', function() {
 
   describe('E2E-05: Disabled site', function() {
     it('should return 403 when site is disabled regardless of other settings', async function() {
-      const site = await fixtures.createSite(database.knex, {
+      const site = await fixtures.createSite(store, {
         expected_name: 'disabled-site-e2e05',
         upstream_origin: 'https://disabled-ns.example.com',
         is_enabled: false,
@@ -139,7 +176,7 @@ describe('Integration: Warden E2E Flow', function() {
     });
 
     it('should return 403 when site has no authenticity record in strictly_nightscout mode', async function() {
-      const site = await fixtures.createSite(database.knex, {
+      const site = await fixtures.createSite(store, {
         expected_name: 'byod-unvalidated-e2e06',
         upstream_origin: 'https://byod-ns.example.com',
         is_enabled: true,
@@ -155,14 +192,14 @@ describe('Integration: Warden E2E Flow', function() {
     });
 
     it('should return 200 when site has acceptable authenticity record', async function() {
-      const site = await fixtures.createSite(database.knex, {
+      const site = await fixtures.createSite(store, {
         expected_name: 'byod-validated-e2e06',
         upstream_origin: 'https://byod-valid-ns.example.com',
         is_enabled: true,
         require_identities: false
       });
 
-      await fixtures.createAuthenticityRecord(database.knex, {
+      await fixtures.createAuthenticityRecord(store, {
         expected_name: 'byod-validated-e2e06',
         upstream_origin: 'https://byod-valid-ns.example.com',
         status: 'ok',

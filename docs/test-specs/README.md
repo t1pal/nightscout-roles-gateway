@@ -128,20 +128,24 @@ NODE_ENV=test npm test -- --grep "sync_hashed_api_secret"
 | Trigger: sort order | TRG-SO-01 to TRG-SO-06 | 6 | ✅ Implemented (quirk documented) |
 | Integration: about_server | - | 1 | ✅ Implemented |
 | Integration: site_registration | - | 6 (1 pass, 5 skipped) | ⏭️ 5 skipped without Hydra (INT-SR-Q01) |
+| Integration: warden_flow | E2E-01 to E2E-06 | 8 (5 pass, 3 pending) | ⏳ 3 skipped (see E2E-Q01, E2E-Q02) |
 | Kratos identity | IR-* | - | 🔲 Requires mocking |
 | API inspection | BI-*, AI-* | - | 🔲 Requires network |
 
-**Test Totals**: 132 passing, 5 pending/skipped (Hydra-dependent tests skipped via `SKIP_HYDRA_TESTS=1`)
+**Test Totals**: 137 passing, 8 pending/skipped (Hydra-dependent tests skipped via `SKIP_HYDRA_TESTS=1`)
 
 *Last updated: January 2026*
 
 ## Next Steps for Contributors
 
-With Site Lookup tests now complete, the handler chain from site resolution through decision is well-covered. The next high-value testing opportunities are:
+With warden E2E tests now partially implemented (5 passing, 3 pending), the authorization pipeline has good coverage. Remaining work:
 
-1. **Warden end-to-end integration tests** (E2E-01 to E2E-06 in phase1-authorization.md) - This would exercise the complete handler chain with real database fixtures, providing the highest confidence that all components work together correctly.
+1. **Fix async handler timing issue** (E2E-Q02) - The `matches_api_secret` handler's Promise doesn't complete before the decision handler runs. This appears to be a restify middleware chain issue that needs investigation. The handler code is correct but the async execution order is wrong.
 
-2. **Kratos identity resolution** (IR-*) - Requires mocking the Ory Kratos API responses. Use the same mocking pattern established in the policy tests.
+2. **Kratos mock server** (E2E-Q01) - Identity tests (E2E-02, E2E-03) require a way to inject authenticated sessions. Options:
+   - Create a mock Kratos HTTP server that responds to `/sessions/whoami`
+   - Use dependency injection to replace the Kratos SDK in test mode
+   - Add a test header bypass (not recommended for security reasons)
 
 3. **ACL lookup tests** (ACL-01 to ACL-04) - Test `get_acls` and `get_acl_by_identity_param` handlers which populate `res.locals.acl` from the unified view.
 
@@ -159,6 +163,8 @@ See `test/quirks/README.md` for documented edge cases and unexpected behaviors o
 | TRG-SO-Q01 | Sort order trigger not installed (migration bypass) |
 | TRG-HS-Q01 | api_secret column limited to 255 characters |
 | INT-SR-Q01 | Site registration tests require ORY Hydra service (skipped via `SKIP_HYDRA_TESTS=1`) |
+| E2E-Q01 | Identity tests (E2E-02, E2E-03) require Kratos mock server for session injection |
+| E2E-Q02 | API-SECRET matching test (E2E-04) has async handler timing issue in restify chain |
 
 ## Related Documentation
 

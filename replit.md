@@ -50,3 +50,11 @@ The server runs on port 5000 by default. Use the "API Server" workflow to start 
 - `KNEX_CONNECT` - PostgreSQL connection string (for staging/production)
 - `KRATOS_API` - Kratos API endpoint
 - `HYDRA_API` - Hydra API endpoint
+
+## Recent Changes
+
+- **January 2026**: Updated `docs/token-management.md` with confirmed Nightscout authorization details:
+  - Actual `/api/v2/authorization/subjects` response format (fields: `_id`, `name`, `accessToken`, `roles`)
+  - Security audit findings: JWT structure (1hr expiry, HMAC-SHA256 signing), default roles, Shiro permission format
+  - Access token derivation formula from API_SECRET + subject name
+  - Refined deprivilege workflow: setup phase (API secret) → runtime phase (access tokens)

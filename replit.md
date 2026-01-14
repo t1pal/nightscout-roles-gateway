@@ -175,6 +175,11 @@ Critical security checks (secret hashing, blocklist enforcement) happen in datab
 ## Recent Changes
 
 **January 2026**:
+- Implemented static_analysis unit tests (19 tests, SA-01 to SA-14)
+  - API secret length validation (12+ chars required)
+  - URL syntax validation with proper boolean returns
+  - Fixed bug: URL validation now returns `false` instead of `null` for invalid URLs
+  - Added named exports for unit testing: `static_analysis`, `check_api_secret_syntax`
 - Implemented view accuracy test suite (21 passing tests)
   - Tests for `site_policy_schedules`, `site_policy_schedules_active`, `unified_active_site_policies`
   - Verified schedule expansion, time window filtering, COALESCE merge, ACL sort order
@@ -196,6 +201,9 @@ NODE_ENV=test npm test
 
 # Run view accuracy tests
 NODE_ENV=test npm test -- --grep "View:"
+
+# Run unit tests
+NODE_ENV=test npm test -- --grep "Unit:"
 
 # Run specific test file
 NODE_ENV=test npm test -- --grep "unified_active_site_policies"

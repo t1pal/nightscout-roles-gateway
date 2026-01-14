@@ -167,6 +167,18 @@ describe('Unit: static_analysis', function() {
       expect(urlResult.passing).to.be.false;
     });
 
+    it('should return boolean false (not null) for invalid URLs', async function() {
+      const cfg = {
+        api_secret: 'validsecret123',
+        upstream_origin: ''
+      };
+      const results = await static_analysis(cfg);
+      const urlResult = results.find(r => r.property === 'url syntax');
+
+      expect(urlResult.passing).to.equal(false);
+      expect(typeof urlResult.passing).to.equal('boolean');
+    });
+
     it('SA-13: should pass for localhost URL', async function() {
       const cfg = {
         api_secret: 'validsecret123',

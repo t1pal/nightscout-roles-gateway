@@ -84,6 +84,19 @@ NODE_ENV=test npm test -- --grep "View:"
 NODE_ENV=test npm test -- --grep "site_policy_schedules"
 ```
 
+## Test Coverage Summary
+
+| Area | Spec IDs | Tests | Status |
+|------|----------|-------|--------|
+| View: site_policy_schedules | SPV-* | 8 | ✅ Implemented |
+| View: site_policy_schedules_active | SPVA-* | 6 | ✅ Implemented |
+| View: unified_active_site_policies | UASP-* | 7 | ✅ Implemented |
+| Static analysis | SA-01 to SA-14 | 19 | ✅ Implemented |
+| Decision function | D-01 to D-09 | - | 🔲 Planned |
+| Email normalization | GI-01 to GI-04 | - | 🔲 Planned |
+| Kratos identity | IR-* | - | 🔲 Requires mocking |
+| API inspection | BI-*, AI-* | - | 🔲 Requires network |
+
 ## Discovered Quirks
 
 See `test/quirks/README.md` for documented edge cases and unexpected behaviors observed during testing. Key findings:

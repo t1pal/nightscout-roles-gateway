@@ -62,6 +62,8 @@ The server runs on port 5000. Use the "API Server" workflow in Replit.
 │   ├── access-modes.md     # Detailed Mode A/B/C documentation
 │   ├── policies-and-permissions.md  # Groups, policies, schedules
 │   ├── criteria-system.md  # BYOD validation pipeline
+│   ├── proposals/          # RFC proposals
+│   │   └── oidc-actor-identity-proposal.md  # OIDC plugin for NS Core
 │   └── ...
 └── test/                   # Test files
 ```

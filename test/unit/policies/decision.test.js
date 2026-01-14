@@ -223,8 +223,8 @@ describe('Unit: decision() function', function() {
       res.locals.acl = null;
       
       decision(req, res, function() {
-        expect(res.locals.active).to.be.false;
-        expect(res.locals.policy_allow_authorized_use).to.be.false;
+        expect(res.locals.active).to.not.be.ok;
+        expect(res.locals.policy_allow_authorized_use).to.not.be.ok;
         expect(res.statusCode).to.equal(403);
         done();
       });

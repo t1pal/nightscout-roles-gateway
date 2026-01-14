@@ -175,6 +175,11 @@ Critical security checks (secret hashing, blocklist enforcement) happen in datab
 ## Recent Changes
 
 **January 2026**:
+- Implemented describe() function unit tests (8 tests, DS-01 to DS-05 plus edge cases)
+  - Summary generation with status OK/not ok and acceptable flag
+  - Correct categorization of passing, warning (non-mandatory), and reject (mandatory) counts
+  - Proper pluralization in status messages
+  - Located in `test/unit/criteria/describe.test.js`
 - Implemented static_analysis unit tests (19 tests, SA-01 to SA-14)
   - API secret length validation (12+ chars required)
   - URL syntax validation with proper boolean returns

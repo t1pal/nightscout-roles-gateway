@@ -10,6 +10,7 @@ This directory contains the API documentation for the Nightscout Roles Gateway (
 - `oauth-client-lifecycle.md` - OAuth client management, invitation/RSVP flow, and Hydra integration
 - `policies-and-permissions.md` - Groups, connection policies, scheduled access, and ACL resolution
 - `site-registration-workflow.md` - Site registration lifecycle, endpoints, and auto-created resources
+- `token-management.md` - NSJWT token exchange, authorization discovery, and deprivilege workflows
 - `warden-gateway.md` - NGINX authorization integration, handler chain, and upstream resolution
 
 ## Architecture
@@ -139,7 +140,6 @@ This OpenAPI specification is a skeleton that covers the main endpoint categorie
 ### TODO: Additional Endpoints to Document
 
 - Complete entity filtering and search
-- Token management
 - Activity logging
 - Detailed request/response schemas
 
@@ -150,6 +150,7 @@ This OpenAPI specification is a skeleton that covers the main endpoint categorie
 - Scheduled policies → See `policies-and-permissions.md`
 - Site registration workflow → See `site-registration-workflow.md`
 - OAuth client lifecycle → See `oauth-client-lifecycle.md`
+- Token management and NSJWT exchange → See `token-management.md`
 
 ## Contributing
 

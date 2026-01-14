@@ -61,6 +61,7 @@ Location: `test/views/`
 
 Test isolated functions with mocked dependencies:
 - `decision()` function logic paths
+- `matches_api_secret()` API secret validation (AS-01 to AS-07, AS-FB01 to AS-FB03)
 - `static_analysis()` validation rules
 - `describe()` summary/result generation (DS-01 to DS-05)
 - Email normalization
@@ -97,6 +98,7 @@ NODE_ENV=test npm test -- --grep "site_policy_schedules"
 | Static analysis | SA-01 to SA-14 | 19 | ✅ Implemented |
 | describe() summary | DS-01 to DS-05 | 8 | ✅ Implemented |
 | Decision function | D-01 to D-09 | 15 | ✅ Implemented |
+| API secret matching | AS-01 to AS-07, AS-FB01 to AS-FB03 | 10 | ✅ Implemented |
 | Email normalization | GI-01 to GI-04 | 11 | ✅ Implemented |
 | Kratos identity | IR-* | - | 🔲 Requires mocking |
 | API inspection | BI-*, AI-* | - | 🔲 Requires network |
@@ -105,15 +107,13 @@ NODE_ENV=test npm test -- --grep "site_policy_schedules"
 
 ## Next Steps for Contributors
 
-With the decision function tests now complete, the next high-value testing opportunity is the **API Secret Matching** flow (`matches_api_secret` handler, spec IDs AS-01 to AS-07). This is a natural progression because:
+With API Secret Matching tests now complete, the Mode C (Legacy Escape) authorization path is fully covered. The next high-value testing opportunities are:
 
-1. **It completes the authorization chain** - The decision tests verify what happens *after* credentials are resolved, but API secret matching is the mechanism that *sets* `allow_for_matching_api_secret`. Testing both ensures the full Mode C (Legacy Escape) path is covered.
+1. **Warden end-to-end integration tests** (E2E-01 to E2E-06 in phase1-authorization.md) - This would exercise the complete handler chain with real database fixtures, providing the highest confidence that all components work together correctly.
 
-2. **Similar testing pattern** - Like decision(), this handler can be unit tested by mocking the database layer (`persist.entities.Site.db.findById`). Use the same `lookup()` instantiation pattern established in `test/unit/policies/decision.test.js`.
+2. **Kratos identity resolution** (IR-*) - Requires mocking the Ory Kratos API responses. Use the same mocking pattern established in the policy tests.
 
-3. **Security-critical** - API secret bypass is an escape hatch that grants full access. Ensuring it correctly validates the SHA1 hash, checks `exempt_matching_api_secret`, and respects `is_enabled` is essential.
-
-If you prefer to work on integration tests instead, the **Warden end-to-end flow** (E2E-01 to E2E-06 in phase1-authorization.md) would exercise the complete handler chain with real database fixtures. This requires more setup but provides the highest confidence that all components work together correctly.
+3. **Site lookup tests** (SL-01 to SL-05) - Test the `find_expected_name` handler which loads site configuration and joins with authenticity records.
 
 ## Discovered Quirks
 

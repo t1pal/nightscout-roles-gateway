@@ -103,6 +103,18 @@ NODE_ENV=test npm test -- --grep "site_policy_schedules"
 
 *Last updated: January 2026*
 
+## Next Steps for Contributors
+
+With the decision function tests now complete, the next high-value testing opportunity is the **API Secret Matching** flow (`matches_api_secret` handler, spec IDs AS-01 to AS-07). This is a natural progression because:
+
+1. **It completes the authorization chain** - The decision tests verify what happens *after* credentials are resolved, but API secret matching is the mechanism that *sets* `allow_for_matching_api_secret`. Testing both ensures the full Mode C (Legacy Escape) path is covered.
+
+2. **Similar testing pattern** - Like decision(), this handler can be unit tested by mocking the database layer (`persist.entities.Site.db.findById`). Use the same `lookup()` instantiation pattern established in `test/unit/policies/decision.test.js`.
+
+3. **Security-critical** - API secret bypass is an escape hatch that grants full access. Ensuring it correctly validates the SHA1 hash, checks `exempt_matching_api_secret`, and respects `is_enabled` is essential.
+
+If you prefer to work on integration tests instead, the **Warden end-to-end flow** (E2E-01 to E2E-06 in phase1-authorization.md) would exercise the complete handler chain with real database fixtures. This requires more setup but provides the highest confidence that all components work together correctly.
+
 ## Discovered Quirks
 
 See `test/quirks/README.md` for documented edge cases and unexpected behaviors observed during testing. Key findings:

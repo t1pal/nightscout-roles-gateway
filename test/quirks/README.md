@@ -166,10 +166,12 @@ server.post('/api/v1/workflows/site/registrations/:expected_name'
 - These integration tests require a running Hydra instance
 - Database-only tests (views, triggers, unit) all pass without external dependencies
 
-**Workaround Options** (not implemented, documented for future reference):
-1. Mock the Hydra client in test environment
-2. Skip Hydra client creation in test mode
-3. Run these tests only in environments with Hydra available
+**Solution**: Set `SKIP_HYDRA_TESTS=1` environment variable to skip these tests:
+```bash
+SKIP_HYDRA_TESTS=1 NODE_ENV=test npm test
+```
+
+The test file checks this flag and uses Mocha's `this.skip()` to mark Hydra-dependent tests as pending.
 
 ---
 

@@ -43,3 +43,6 @@ run = ["node", "server.js"]
 [userenv.development]
 BACKEND_ENV = "staging"
 KNEX_CONNECT = "postgresql://postgres:password@helium/heliumdb?sslmode=disable"
+
+[userenv.shared]
+SKIP_HYDRA_TESTS = "1"

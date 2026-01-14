@@ -14,6 +14,9 @@ var store = require('../../lib/storage')(env);
 var server = null;
 var my = null;
 
+// Check if Hydra-dependent tests should be skipped (see test/quirks/README.md INT-SR-Q01)
+var SKIP_HYDRA_TESTS = process.env.SKIP_HYDRA_TESTS === '1';
+
 describe("Integration Test", function ( ) {
   before(function (done) {
     var env = require('../../env');
@@ -72,6 +75,9 @@ describe("Integration Test", function ( ) {
     });
 
     it ("registering a new site should return site registration details", function (done) {
+      if (SKIP_HYDRA_TESTS) {
+        this.skip();
+      }
 
       chai.request(server)
         .post('/api/v1/workflows/site/registrations/testsite0')
@@ -95,6 +101,9 @@ describe("Integration Test", function ( ) {
   var reg = { };
   describe("Site Registration Unique Constraints", function ( ) {
     before(function (done) {
+      if (SKIP_HYDRA_TESTS) {
+        this.skip();
+      }
       // store.destroy( );
       // store.initialize( );
       my = { store };

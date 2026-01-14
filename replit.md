@@ -53,6 +53,13 @@ The server runs on port 5000 by default. Use the "API Server" workflow to start 
 
 ## Recent Changes
 
+- **January 2026**: Created comprehensive test specifications in `docs/test-specs/`:
+  - `phase1-authorization.md`: Policy resolution, decision logic, access modes A/B/C, BYOD authenticity gate, API secret matching, schedule evaluation
+  - `phase2-identity-access.md`: Privy identity resolution, Kratos error handling, group inclusion matching, consent flow
+  - `phase3-criteria-validation.md`: BYOD criteria validation pipeline, static analysis, API inspection
+  - Includes 100+ test case specifications with IDs for traceability
+  - Proposed test file organization structure for unit and integration tests
+
 - **January 2026**: Created `docs/owner-management-api.md` documenting:
   - T1Pal control panel API for managing sites, groups, and policies on behalf of Nightscout owners
   - Database views: `site_acls`, `owner_group_usage`, `site_policy_overview`

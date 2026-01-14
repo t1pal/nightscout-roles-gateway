@@ -53,6 +53,15 @@ The server runs on port 5000 by default. Use the "API Server" workflow to start 
 
 ## Recent Changes
 
+- **January 2026**: Created `docs/privy-identity-access.md` documenting:
+  - Identity verification and consent tracking module
+  - `site_acls` view and `joined_groups` table data model
+  - Invitation flow: owner invites emails → user sees pending → user accepts → access granted
+  - Consent model: view access + audit trail for owner
+  - API reference for all `/privy/` endpoints
+  - Activity logging specification for future implementation
+  - Testing considerations and edge cases
+
 - **January 2026**: Updated `docs/token-management.md` with confirmed Nightscout authorization details:
   - Actual `/api/v2/authorization/subjects` response format (fields: `_id`, `name`, `accessToken`, `roles`)
   - Security audit findings: JWT structure (1hr expiry, HMAC-SHA256 signing), default roles, Shiro permission format

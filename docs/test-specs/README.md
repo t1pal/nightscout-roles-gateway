@@ -62,7 +62,10 @@ Location: `test/views/`
 Test isolated functions with mocked dependencies:
 - `decision()` function logic paths
 - `static_analysis()` validation rules
+- `describe()` summary/result generation (DS-01 to DS-05)
 - Email normalization
+
+Location: `test/unit/` and `test/unit/criteria/`
 
 ### Integration Tests
 
@@ -92,6 +95,7 @@ NODE_ENV=test npm test -- --grep "site_policy_schedules"
 | View: site_policy_schedules_active | SPVA-* | 6 | ✅ Implemented |
 | View: unified_active_site_policies | UASP-* | 7 | ✅ Implemented |
 | Static analysis | SA-01 to SA-14 | 19 | ✅ Implemented |
+| describe() summary | DS-01 to DS-05 | 8 | ✅ Implemented |
 | Decision function | D-01 to D-09 | - | 🔲 Planned |
 | Email normalization | GI-01 to GI-04 | - | 🔲 Planned |
 | Kratos identity | IR-* | - | 🔲 Requires mocking |

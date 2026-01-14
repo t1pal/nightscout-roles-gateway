@@ -53,6 +53,13 @@ The server runs on port 5000 by default. Use the "API Server" workflow to start 
 
 ## Recent Changes
 
+- **January 2026**: Created `docs/owner-management-api.md` documenting:
+  - T1Pal control panel API for managing sites, groups, and policies on behalf of Nightscout owners
+  - Database views: `site_acls`, `owner_group_usage`, `site_policy_overview`
+  - Complete API reference for owner-scoped endpoints (synopsis, ACLs, groups, memberships, policies)
+  - Group creation with initial members, policy assignment with scheduled access
+  - Common workflows: create groups, assign to sites, manage members, delete sites
+
 - **January 2026**: Created `docs/privy-identity-access.md` documenting:
   - Identity verification and consent tracking module
   - `site_acls` view and `joined_groups` table data model

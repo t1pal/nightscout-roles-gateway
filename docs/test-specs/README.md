@@ -140,14 +140,27 @@ NODE_ENV=test npm test -- --grep "sync_hashed_api_secret"
 
 With warden E2E tests now partially implemented (5 passing, 3 pending), the authorization pipeline has good coverage. Remaining work:
 
-1. **Fix async handler timing issue** (E2E-Q02) - The `matches_api_secret` handler's Promise doesn't complete before the decision handler runs. This is a restify middleware chain issue where Promise-based handlers don't block subsequent handlers. Investigation needed: restify may require a wrapper or plugin for async middleware support.
+1. **Use portal endpoint for identity tests** (E2E-Q03) - The `/warden/v1/portal/:subject/backend/for/:expected_name` endpoint bypasses `kratos_whoami` entirely and takes the subject as a URL parameter. This allows testing the full identity-mapped access flow (AM-B01 through AM-B06, MC-01 through MC-03) without needing a Kratos mock server. Tests can:
+   - Create a site with `require_identities: true`
+   - Create group, policy, and `joined_groups` records for a known subject
+   - Hit `/warden/v1/portal/{subject}/backend/for/{site-name}`
+   - Verify the decision logic works end-to-end
 
-2. **Kratos mock server** (E2E-Q01) - Identity tests (E2E-02, E2E-03) require a way to inject authenticated sessions. Options:
+2. **Fix async handler timing issue** (E2E-Q02) - The `matches_api_secret` handler's Promise doesn't complete before the decision handler runs. This is a restify middleware chain issue where Promise-based handlers don't block subsequent handlers. Investigation needed: restify may require a wrapper or plugin for async middleware support.
+
+3. **Add error handling to matches_api_secret** (MAS-Q01) - The `matches_api_secret` handler in `lib/policies/index.js` is missing a `.catch(next)` on its Promise chain. While this doesn't cause functional failures, unhandled promise rejections will crash the process in newer Node.js versions. The fix is straightforward:
+   ```javascript
+   persist.entities.Site.db.findById(...)
+     .then(function (matches) { ... next(); })
+     .catch(next);  // <-- Add this
+   ```
+
+4. **Kratos mock server** (E2E-Q01) - For testing the `/warden/v1/active/` endpoints that require session cookies, options remain:
    - Create a mock Kratos HTTP server that responds to `/sessions/whoami`
    - Use dependency injection to replace the Kratos SDK in test mode
-   - Add a test header bypass (not recommended for security reasons)
+   - **Recommended**: Use the portal endpoint instead for most identity tests (see item 1)
 
-3. **ACL lookup tests** (ACL-01 to ACL-04) - Test `get_acls` and `get_acl_by_identity_param` handlers which populate `res.locals.acl` from the unified view.
+5. **ACL lookup tests** (ACL-01 to ACL-04) - Test `get_acls` and `get_acl_by_identity_param` handlers which populate `res.locals.acl` from the unified view.
 
 ## Discovered Quirks
 
@@ -165,6 +178,8 @@ See `test/quirks/README.md` for documented edge cases and unexpected behaviors o
 | INT-SR-Q01 | Site registration tests require ORY Hydra service (skipped via `SKIP_HYDRA_TESTS=1`) |
 | E2E-Q01 | Identity tests (E2E-02, E2E-03) require Kratos mock server for session injection |
 | E2E-Q02 | API-SECRET matching test (E2E-04) has async handler timing issue in restify chain |
+| E2E-Q03 | Portal endpoint (`/warden/v1/portal/:subject/`) bypasses Kratos, enabling identity tests without mocking |
+| MAS-Q01 | `matches_api_secret` handler missing `.catch(next)` - potential unhandled promise rejection |
 
 ## Related Documentation
 

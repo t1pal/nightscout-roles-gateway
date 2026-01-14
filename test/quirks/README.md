@@ -76,11 +76,13 @@ The difference is exactly 86400 seconds (1 day). This means:
 
 ---
 
-### SL-Q01: Unique constraint on expected_name prevents duplicate sites
+### SL-Q01: Unique constraint on expected_name enforces DNS-based tenant isolation
 
 **Table**: `registered_sites`  
-**Status**: By design  
-**Description**: The `expected_name` column in `registered_sites` has a unique constraint. The `find_expected_name` handler includes code to handle the case where multiple rows are returned (calling `next(rows)` when `rows.length != 1`), but this scenario cannot occur in practice because the database enforces uniqueness.
+**Status**: By design (intentional data integrity constraint)  
+**Description**: The `expected_name` column has a unique constraint because it forms a unique subdomain (e.g., `mysite.gateway.example.com`). There can only be one registered backend tenant site per DNS name to ensure that CGM data flows exclusively to the designated person's site.
+
+The `find_expected_name` handler includes defensive code to handle multiple rows (`next(rows)` when `rows.length != 1`), but this path cannot be triggered because the schema enforces uniqueness at the database level.
 
 **Code Path**:
 ```javascript
@@ -90,13 +92,14 @@ if (rows.length == 1) {
   next( );
   return;
 }
-next(rows); // This path handles 0 rows OR >1 rows
+next(rows); // This path handles 0 rows OR >1 rows (>1 cannot occur)
 ```
 
 **Impact**: 
 - The >1 row case is defense-in-depth code that can never be triggered
 - The 0 row case (unknown site) is the only alternative path
 - Test SL-05 is marked as skipped because the unique constraint prevents creating the test scenario
+- This is a critical security/integrity feature, not a limitation
 
 ---
 

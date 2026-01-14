@@ -25,6 +25,10 @@ describe('Integration: Warden E2E Flow', function() {
   let my;
 
   before(async function() {
+    if (process.env.SKIP_KRATOS_TESTS) {
+      this.skip();
+      return;
+    }
     env = require('../../env');
     store = require('../../lib/storage')(env);
     store.initialize();
@@ -35,8 +39,10 @@ describe('Integration: Warden E2E Flow', function() {
   });
 
   after(async function() {
-    await store.migrate.rollback();
-    store.destroy();
+    if (store) {
+      await store.migrate.rollback();
+      store.destroy();
+    }
   });
 
   beforeEach(async function() {

@@ -175,6 +175,51 @@ The test file checks this flag and uses Mocha's `this.skip()` to mark Hydra-depe
 
 ---
 
+### E2E-Q01: Warden E2E tests require Kratos connectivity
+
+**Test File**: `test/integration/warden_flow.test.js`  
+**Status**: Expected (external dependency)  
+**Description**: All warden E2E tests go through the `kratos_whoami` handler which calls the Kratos API. The original handler only handles 401 responses gracefully - connection errors (ECONNREFUSED) cause a TypeError when accessing `error.response.status` on an undefined object.
+
+**Original Code** (`lib/privy/index.js`):
+```javascript
+.catch(function (error) {
+  if (error.response.status == '401') {  // TypeError if error.response is undefined
+    // handle 401
+  }
+  next( );
+});
+```
+
+**Impact**:
+- All warden E2E tests require Kratos connectivity
+- Set `SKIP_KRATOS_TESTS=1` to skip these tests
+- In production, Kratos must be available for the warden endpoint to function
+
+---
+
+### E2E-Q02: matches_api_secret async timing issue
+
+**Handler**: `lib/policies/index.js - matches_api_secret`  
+**Status**: Observed, documented (code not modified)  
+**Description**: The `matches_api_secret` handler uses a Promise-based query, but the restify middleware chain does not wait for the Promise to resolve before calling the next handler (`decision`). This causes `decision` to run with `allow_for_matching_api_secret: undefined`.
+
+**Observed Behavior**:
+```
+1. matches_api_secret ENTER (Promise starts)
+2. decision ENTER (allow_for_matching_api_secret: undefined) <- runs before Promise resolves
+3. matches() callback runs AFTER decision
+```
+
+**Root Cause**: The original code uses `.then()` without returning the Promise or using a mechanism for restify to await completion. Other handlers in the chain (like `find_expected_name`) use the same pattern but work correctly, suggesting the issue may be related to handler ordering or connection pool timing.
+
+**Impact**:
+- Test E2E-04 (valid API-SECRET returns 200) is skipped
+- Legacy devices with API-SECRET bypass may not work correctly in production
+- Investigation needed: restify may require async middleware wrapper
+
+---
+
 ## Adding New Quirks
 
 Use this template:

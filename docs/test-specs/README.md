@@ -128,11 +128,11 @@ NODE_ENV=test npm test -- --grep "sync_hashed_api_secret"
 | Trigger: sort order | TRG-SO-01 to TRG-SO-06 | 6 | ✅ Implemented (quirk documented) |
 | Integration: about_server | - | 1 | ✅ Implemented |
 | Integration: site_registration | - | 6 (1 pass, 5 skipped) | ⏭️ 5 skipped without Hydra (INT-SR-Q01) |
-| Integration: warden_flow | E2E-01 to E2E-06 | 8 (5 pass, 3 pending) | ⏳ 3 skipped (see E2E-Q01, E2E-Q02) |
+| Integration: warden_flow | E2E-01 to E2E-06 | 8 | ⏭️ Skipped without Kratos (E2E-Q01, E2E-Q02) |
 | Kratos identity | IR-* | - | 🔲 Requires mocking |
 | API inspection | BI-*, AI-* | - | 🔲 Requires network |
 
-**Test Totals**: 137 passing, 8 pending/skipped (Hydra-dependent tests skipped via `SKIP_HYDRA_TESTS=1`)
+**Test Totals**: 132 passing, 13 pending/skipped (Hydra: `SKIP_HYDRA_TESTS=1`, Kratos: `SKIP_KRATOS_TESTS=1`)
 
 *Last updated: January 2026*
 

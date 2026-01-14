@@ -259,15 +259,16 @@ NODE_ENV=test npm test -- --grep "unified_active_site_policies"
 - Test database is shared; each test file manages its own migrations in `before()` hooks
 
 **Test Results** (as of January 2026):
-- **132 tests passing, 5 pending** (with `SKIP_HYDRA_TESTS=1`)
-- See `test/quirks/README.md` for documented quirk INT-SR-Q01
+- **132 tests passing, 13 pending** (with `SKIP_HYDRA_TESTS=1 SKIP_KRATOS_TESTS=1`)
+- See `test/quirks/README.md` for documented quirks (INT-SR-Q01, E2E-Q01, E2E-Q02)
 
-**Skipping Hydra-Dependent Tests**:
-Set `SKIP_HYDRA_TESTS=1` environment variable to skip tests that require ORY Hydra:
+**Skipping External Dependency Tests**:
+Set environment variables to skip tests requiring external services:
 ```bash
-SKIP_HYDRA_TESTS=1 NODE_ENV=test npm test
+SKIP_HYDRA_TESTS=1 SKIP_KRATOS_TESTS=1 NODE_ENV=test npm test
 ```
-This is pre-configured in the Replit environment.
+- `SKIP_HYDRA_TESTS=1` - Skip site registration tests (require ORY Hydra)
+- `SKIP_KRATOS_TESTS=1` - Skip warden E2E tests (require ORY Kratos)
 
 **External Dependencies**:
 - **ORY Hydra**: Site registration tests call `create_hydra_client` which requires the Hydra admin API at `HYDRA_API` (defaults to `http://hydra-gw-admin.service.consul:4445`). Without Hydra, these tests are skipped when `SKIP_HYDRA_TESTS=1`.

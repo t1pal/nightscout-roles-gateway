@@ -233,20 +233,50 @@ Critical security checks (secret hashing, blocklist enforcement) happen in datab
 
 ### Running Tests
 ```bash
-# Run all tests (requires PostgreSQL)
+# Run all tests (requires PostgreSQL via DATABASE_URL)
 NODE_ENV=test npm test
 
 # Run view accuracy tests
 NODE_ENV=test npm test -- --grep "View:"
 
+# Run trigger tests
+NODE_ENV=test npm test -- --grep "Trigger:"
+
 # Run unit tests
 NODE_ENV=test npm test -- --grep "Unit:"
+
+# Run integration tests
+NODE_ENV=test npm test -- --grep "Integration"
 
 # Run specific test file
 NODE_ENV=test npm test -- --grep "unified_active_site_policies"
 ```
 
-**Note**: View tests require PostgreSQL. SQLite cannot run these tests because the views use PostgreSQL-specific features (UNNEST, string_to_array, window functions).
+**Test Configuration**:
+- All tests use PostgreSQL via `DATABASE_URL` environment variable
+- The `knexfile.js` test config reads `DATABASE_URL` for connection
+- Integration tests and newer tests (views/triggers/unit) all run together
+- Test database is shared; each test file manages its own migrations in `before()` hooks
+
+**Test Results** (as of January 2026):
+- **132 tests passing**
+- **2 tests failing** - Site registration integration tests require ORY Hydra service
+- See `test/quirks/README.md` for documented quirk INT-SR-Q01
+
+**External Dependencies**:
+- **ORY Hydra**: Site registration tests call `create_hydra_client` which requires the Hydra admin API at `HYDRA_API` (defaults to `http://hydra-gw-admin.service.consul:4445`). Without Hydra, 2 of 6 site_registration tests fail with 500 errors.
+- To run only database tests (no external dependencies):
+  ```bash
+  NODE_ENV=test npm test -- --grep "View:"
+  NODE_ENV=test npm test -- --grep "Trigger:"
+  NODE_ENV=test npm test -- --grep "Unit:"
+  ```
+- To skip Hydra-dependent tests and run everything else:
+  ```bash
+  NODE_ENV=test npm test -- --ignore test/integration/site_registration.test.js
+  ```
+
+**Note**: View and trigger tests require PostgreSQL. SQLite cannot run these tests because the views use PostgreSQL-specific features (UNNEST, string_to_array, window functions).
 
 ### Running Migrations
 ```bash

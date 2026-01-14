@@ -137,6 +137,42 @@ Test SL-05 proves this constraint works by attempting to insert a duplicate `exp
 
 ---
 
+### INT-SR-Q01: Site registration integration tests require ORY Hydra
+
+**Test File**: `test/integration/site_registration.test.js`  
+**Status**: Expected (external dependency)  
+**Description**: The site registration workflow at `/api/v1/workflows/site/registrations/:expected_name` calls `create_hydra_client` which attempts to connect to ORY Hydra at `http://hydra-gw-admin.service.consul:4445`. When Hydra is unavailable, the handler returns a 500 error.
+
+**Handler Chain**:
+```javascript
+// lib/routes.js line 173-180
+server.post('/api/v1/workflows/site/registrations/:expected_name'
+  , registrations.handlers.suggest_registration     // ✓ Works
+  , registrations.handlers.find_existing            // ✓ Works
+  , registrations.handlers.insert_new_site_registration  // ✓ Works
+  , clients.handlers.suggest_new_client             // ✓ Works
+  , clients.handlers.create_hydra_client            // ✗ Fails without Hydra
+  , clients.handlers.record_new_client              // Not reached
+  , locals_results( ));
+```
+
+**Behavior**:
+- First test "proposing a new site" passes (only calls `suggest_registration`)
+- Second test "registering a new site" returns 500 (Hydra connection refused)
+- Subsequent tests in the same describe block also fail
+
+**Impact**:
+- 132 tests pass, 2 tests fail (both in site_registration.test.js)
+- These integration tests require a running Hydra instance
+- Database-only tests (views, triggers, unit) all pass without external dependencies
+
+**Workaround Options** (not implemented, documented for future reference):
+1. Mock the Hydra client in test environment
+2. Skip Hydra client creation in test mode
+3. Run these tests only in environments with Hydra available
+
+---
+
 ## Adding New Quirks
 
 Use this template:

@@ -8,6 +8,7 @@ This directory contains the API documentation for the Nightscout Roles Gateway (
 - `access-modes.md` - Documentation of the three orthogonal access conditions
 - `criteria-system.md` - BYOD Nightscout validation pipeline and security
 - `oauth-client-lifecycle.md` - OAuth client management, invitation/RSVP flow, and Hydra integration
+- `owner-management-api.md` - T1Pal control panel API for managing sites, groups, and policies
 - `policies-and-permissions.md` - Groups, connection policies, scheduled access, and ACL resolution
 - `privy-identity-access.md` - Identity verification, consent tracking, and group membership
 - `site-registration-workflow.md` - Site registration lifecycle, endpoints, and auto-created resources
@@ -146,6 +147,7 @@ This OpenAPI specification is a skeleton that covers the main endpoint categorie
 
 ### Recently Documented
 
+- Owner management API (T1Pal control panel) → See `owner-management-api.md`
 - Group inclusion specifications → See `policies-and-permissions.md`
 - Policy assignment and permissions → See `policies-and-permissions.md`
 - Scheduled policies → See `policies-and-permissions.md`

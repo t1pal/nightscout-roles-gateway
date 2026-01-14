@@ -102,7 +102,7 @@ describe('Integration: Warden E2E Flow', function() {
   });
 
   describe('E2E-04: Legacy device with API-SECRET header', function() {
-    it.skip('should return 200 when API-SECRET matches and exempt_matching_api_secret is true (timing issue with async handler chain)', async function() {
+    it.skip('should return 200 when API-SECRET matches and exempt_matching_api_secret is true (async timing issue - restify middleware chain)', async function() {
       const apiSecret = 'testsupersecret123';
       const hashedSecret = sha1Hash(apiSecret);
       const site = await fixtures.createSite(store, {

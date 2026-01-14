@@ -140,7 +140,7 @@ NODE_ENV=test npm test -- --grep "sync_hashed_api_secret"
 
 With warden E2E tests now partially implemented (5 passing, 3 pending), the authorization pipeline has good coverage. Remaining work:
 
-1. **Fix async handler timing issue** (E2E-Q02) - The `matches_api_secret` handler's Promise doesn't complete before the decision handler runs. This appears to be a restify middleware chain issue that needs investigation. The handler code is correct but the async execution order is wrong.
+1. **Fix async handler timing issue** (E2E-Q02) - The `matches_api_secret` handler's Promise doesn't complete before the decision handler runs. This is a restify middleware chain issue where Promise-based handlers don't block subsequent handlers. Investigation needed: restify may require a wrapper or plugin for async middleware support.
 
 2. **Kratos mock server** (E2E-Q01) - Identity tests (E2E-02, E2E-03) require a way to inject authenticated sessions. Options:
    - Create a mock Kratos HTTP server that responds to `/sessions/whoami`

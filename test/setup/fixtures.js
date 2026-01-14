@@ -123,6 +123,25 @@ const fixtures = {
     return knex('oauth2_credentials').insert(data).returning('*').then(rows => rows[0]);
   },
 
+  createAuthenticityRecord(knex, overrides = {}) {
+    const id = overrides.id || generateId();
+    const data = {
+      id,
+      owner_ref: overrides.owner_ref || 'test-owner-' + generateId(),
+      expected_name: overrides.expected_name,
+      upstream_origin: overrides.upstream_origin || 'https://test-ns-' + generateId() + '.example.com',
+      status: overrides.status !== undefined ? overrides.status : 'ok',
+      acceptable: overrides.acceptable !== undefined ? overrides.acceptable : true,
+      ...overrides
+    };
+    
+    if (!data.expected_name) {
+      throw new Error('createAuthenticityRecord requires expected_name');
+    }
+    
+    return knex('nightscout_authenticity_records').insert(data).returning('*').then(rows => rows[0]);
+  },
+
   scheduleHelpers: {
     SECONDS_IN_DAY: 86400,
     SECONDS_IN_WEEK: 604800,

@@ -10,6 +10,7 @@ This directory contains the API documentation for the Nightscout Roles Gateway (
 - `oauth-client-lifecycle.md` - OAuth client management, invitation/RSVP flow, and Hydra integration
 - `policies-and-permissions.md` - Groups, connection policies, scheduled access, and ACL resolution
 - `site-registration-workflow.md` - Site registration lifecycle, endpoints, and auto-created resources
+- `warden-gateway.md` - NGINX authorization integration, handler chain, and upstream resolution
 
 ## Architecture
 

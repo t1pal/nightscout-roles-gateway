@@ -197,16 +197,35 @@ describe('Integration: find_expected_name handler', function() {
     });
   });
 
-  describe('SL-05: Multiple sites (data integrity issue)', function() {
-    it.skip('should call next with rows array when multiple rows returned (QUIRK: SL-Q01 - unique constraint prevents this)', async function() {
-      // QUIRK SL-Q01: The registered_sites table has a unique constraint on expected_name,
-      // so this scenario cannot occur in practice. The database schema prevents duplicate
-      // expected_names at the constraint level, making this a theoretical edge case only.
-      // 
-      // The code path exists in find_expected_name to handle >1 row, but the unique
-      // constraint ensures this never happens. This is defense-in-depth design.
+  describe('SL-05: DNS-based tenant isolation (data integrity requirement)', function() {
+    it('should reject duplicate expected_name at database level to enforce tenant isolation', async function() {
+      // PRODUCT REQUIREMENT: Each expected_name forms a unique subdomain (e.g., mysite.gateway.example.com).
+      // There can only be one registered backend tenant site per DNS name to ensure CGM data
+      // flows exclusively to the designated person's site. This is enforced at the database level.
       //
-      // See test/quirks/README.md for documented quirks.
+      // See test/quirks/README.md SL-Q01 for documentation of this intentional design.
+      
+      // Create first site with expected_name
+      await fixtures.createSite(knex, {
+        expected_name: 'unique-tenant',
+        is_enabled: true
+      });
+      
+      // Attempt to create second site with same expected_name - must fail
+      let constraintError = null;
+      
+      try {
+        await fixtures.createSite(knex, {
+          expected_name: 'unique-tenant',
+          is_enabled: true
+        });
+      } catch (err) {
+        constraintError = err;
+      }
+      
+      expect(constraintError, 'Database must reject duplicate expected_name').to.exist;
+      // PostgreSQL unique violation error code: 23505
+      expect(constraintError.code).to.equal('23505');
     });
   });
 });

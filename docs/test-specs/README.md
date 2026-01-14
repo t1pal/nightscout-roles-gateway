@@ -100,7 +100,7 @@ NODE_ENV=test npm test -- --grep "site_policy_schedules"
 | Decision function | D-01 to D-09 | 15 | ✅ Implemented |
 | API secret matching | AS-01 to AS-07, AS-FB01 to AS-FB03 | 10 | ✅ Implemented |
 | Email normalization | GI-01 to GI-04 | 11 | ✅ Implemented |
-| Site lookup | SL-01 to SL-05 | 5 (+1 skipped) | ✅ Implemented (SL-05 skipped, see SL-Q01) |
+| Site lookup | SL-01 to SL-05 | 6 | ✅ Implemented |
 | Kratos identity | IR-* | - | 🔲 Requires mocking |
 | API inspection | BI-*, AI-* | - | 🔲 Requires network |
 

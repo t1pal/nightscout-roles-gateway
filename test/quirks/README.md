@@ -98,8 +98,10 @@ next(rows); // This path handles 0 rows OR >1 rows (>1 cannot occur)
 **Impact**: 
 - The >1 row case is defense-in-depth code that can never be triggered
 - The 0 row case (unknown site) is the only alternative path
-- Test SL-05 is marked as skipped because the unique constraint prevents creating the test scenario
 - This is a critical security/integrity feature, not a limitation
+
+**Test Coverage**:
+Test SL-05 proves this constraint works by attempting to insert a duplicate `expected_name` and verifying the database rejects it with a unique constraint violation. This documents the product requirement directly in the test suite.
 
 ---
 

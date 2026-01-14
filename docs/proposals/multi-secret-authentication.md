@@ -231,6 +231,74 @@ Authorization: Bearer {admin_token}
 
 ---
 
+## Relationship to Nightscout Subject System
+
+### Background: Nightscout Already Has Multi-Credential Support
+
+Nightscout Core's **subject system** provides per-identity credentials with role-based permissions:
+
+```
+Nightscout Subjects (existing in NS Core):
+├── "readable" → access token: abc123 → roles: [readable]
+├── "careportal" → access token: def456 → roles: [careportal, readable]
+├── "admin" → access token: ghi789 → roles: [admin]
+└── "loop-uploader" → access token: jkl012 → roles: [devicestatus]
+```
+
+Each subject has a name, an access token (long-lived credential), and mapped roles with specific Shiro permissions. This is conceptually similar to the multi-secret proposal.
+
+### Why This Feature Belongs in NRG (Not Nightscout Core)
+
+| Reason | Explanation |
+|--------|-------------|
+| **Gateway-level enforcement** | NRG can reject requests before they reach Nightscout, protecting unmodified instances |
+| **Managed Nightscout compatibility** | BYOD Nightscout instances may not have subjects configured; NRG provides consistent secret management across heterogeneous backends |
+| **Lifecycle management** | Nightscout has no concept of deprecated/expired credentials with grace periods; this is operational tooling that fits gateway responsibility |
+| **Observability** | Usage tracking and attribution happens at the gateway where all requests pass through |
+| **Identity bridging** | NRG secrets can map to Nightscout subjects, leveraging both systems |
+
+### Comparison: NRG Secrets vs Nightscout Subjects
+
+| Feature | NRG Multi-Secret (Proposed) | Nightscout Subjects (Exists) |
+|---------|----------------------------|------------------------------|
+| Named credentials | Yes | Yes |
+| Role/permission mapping | Via `mapped_subject` | Direct role assignment |
+| Revocation | Status field with states | Delete subject |
+| Expiration | `expires_at` timestamp | No (JWTs expire, but access tokens don't) |
+| Usage tracking | `last_used_at`, `usage_count` | No |
+| Rotation workflow | Deprecated status + grace period | Manual |
+| Where enforced | At gateway (NRG) | At origin (Nightscout) |
+
+### Complementary, Not Competing
+
+This proposal complements rather than replaces Nightscout's native subject system:
+
+| Capability | Owner | Rationale |
+|------------|-------|-----------|
+| Per-uploader credentials | Both (user choice) | NS subjects for native users; NRG secrets for managed sites |
+| Lifecycle management | NRG | Deprecation, expiry, grace periods are operational concerns |
+| Usage analytics | NRG | Gateway sees all traffic |
+| Role enforcement | Nightscout | Shiro permissions evaluated at origin |
+| Unified control plane | NRG | Single dashboard for multi-site operators |
+
+### Recommended Patterns
+
+```
+For new managed setups:
+├── Simple: Use NRG multi-secrets with escape hatch (no Nightscout changes)
+└── Advanced: Use NRG multi-secrets mapped to Nightscout subjects (graduated permissions)
+
+For Nightscout-native users (not using NRG):
+└── Continue using Nightscout subjects directly; no NRG involvement
+
+For hybrid deployments:
+└── NRG secrets provide lifecycle management; mapped subjects provide permission enforcement
+```
+
+For advanced use cases, NRG secrets can be mapped to Nightscout subjects, combining gateway-level lifecycle management with origin-level permission enforcement.
+
+---
+
 ## Security Considerations
 
 | Concern | Mitigation |

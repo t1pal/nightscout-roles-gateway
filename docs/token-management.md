@@ -76,36 +76,75 @@ Runtime (IMPLEMENTED):
 
 ## Nightscout Authorization Protocol
 
-Nightscout's authorization system is based on Apache Shiro-style permissions with JWT tokens for stateless authentication.
+Nightscout's authorization system is based on Apache Shiro-style permissions with JWT tokens for stateless authentication. This section documents the protocol based on the official Nightscout security audit (January 2026).
 
 ### Core Concepts
 
 | Concept | Description |
 |---------|-------------|
-| **Subject** | A named identity with a set of permissions (e.g., "readable", "careportal", "admin") |
+| **Subject** | A named identity with a set of roles and an access token (e.g., "readable", "careportal", "admin") |
 | **Role** | A collection of permissions that can be assigned to subjects |
-| **Token** | A time-limited JWT that encodes a subject's permissions for stateless auth |
+| **Access Token** | A persistent identifier tied to a subject, used for authentication |
+| **JWT** | A time-limited token (1 hour default) signed with HMAC-SHA256, containing the access token |
 | **API Secret** | The master credential that can manage subjects and roles |
 
-### Permission Hierarchy
+### Shiro Permission Format
 
-Nightscout uses shiro-style permission strings:
+Nightscout uses Apache Shiro-style permission strings in the format `domain:action:instance`:
 
 | Permission | Grants Access To |
 |------------|------------------|
 | `*` | Full administrative access (equivalent to API secret) |
 | `api:*:read` | Read access to all API endpoints |
+| `api:*:*` | All API operations |
 | `api:entries:read` | Read access to entries (glucose data) |
 | `api:treatments:create` | Create treatments (careportal entries) |
 | `api:treatments:*` | Full treatments access (read, create, update, delete) |
+| `notifications:*:ack` | Acknowledge notifications |
 
-Common pre-configured subjects in Nightscout:
+### Default Roles (from Security Audit)
 
-| Subject | Typical Permissions | Use Case |
-|---------|---------------------|----------|
-| `readable` | `api:*:read` | View-only access |
-| `careportal` | `api:*:read`, `api:treatments:create` | Can log treatments |
+These roles are built into Nightscout:
+
+| Role | Permissions | Description |
+|------|-------------|-------------|
 | `admin` | `*` | Full access |
+| `readable` | `api:*:read`, `notifications:*:ack` | Read-only access |
+| `denied` | (none) | No permissions |
+| `careportal` | `api:treatments:create` | Can add treatments |
+| `devicestatus-upload` | `api:devicestatus:create` | Loop/pump status upload |
+| `activity-create` | `api:activity:create` | Activity logging |
+
+### Access Token Generation
+
+Access tokens are deterministic, derived from the API_SECRET and subject name:
+
+```javascript
+// From Nightscout security audit
+function generateAccessToken(subjectName) {
+  const hash = crypto.createHash('sha1');
+  hash.update(apiSecret + subjectName);
+  return subjectName.replace(' ', '-').toLowerCase() + '-' + hash.digest('hex').substring(0, 16);
+}
+
+// Example: "admin" subject → "admin-7a7f752c970fce6b"
+```
+
+**Security Note**: Tokens are deterministic - if API_SECRET is compromised, all tokens are predictable. Access tokens never expire until manually revoked. Stored in MongoDB `auth_subjects` collection.
+
+### JWT Structure
+
+```json
+{
+  "accessToken": "subject-access-token",
+  "iat": 1234567890,
+  "exp": 1234571490
+}
+```
+
+- **Signing**: HMAC-SHA256 using API_SECRET
+- **Default expiration**: 1 hour
+- **No refresh tokens**: Must re-request when expired
 
 ### Authorization API Endpoints
 
@@ -113,11 +152,44 @@ Nightscout exposes these endpoints for authorization management:
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
-| `/api/v2/authorization/subjects` | GET | List all configured subjects |
+| `/api/v2/authorization/subjects` | GET | List all configured subjects with their access tokens and roles |
 | `/api/v2/authorization/roles` | GET | List all available roles |
-| `/api/v2/authorization/request/{subject}` | GET | Exchange subject for JWT token |
+| `/api/v2/authorization/request/{subject}` | GET | Exchange subject name for JWT token |
 
-**Authentication**: These endpoints require the API secret (as `api-secret` header, SHA1 hashed) for management operations. Token requests may work with lesser credentials depending on Nightscout configuration.
+### Subjects Endpoint Response Format
+
+`GET /api/v2/authorization/subjects` returns an array of subject objects:
+
+```json
+[
+  {
+    "_id": "642ce46e89424207c56ab9a2",
+    "name": "admin",
+    "accessToken": "admin-7a7f752c970fce6b",
+    "roles": ["admin"]
+  },
+  {
+    "_id": "642ce4ac89424207c56ab9a3",
+    "name": "readable",
+    "accessToken": "readable-a1b2c3d4e5f6g7h8",
+    "roles": ["readable"]
+  },
+  {
+    "_id": "642ce4eb89424207c56ab9a4",
+    "name": "school-nurse",
+    "accessToken": "school-nurse-16e6e9eb6ead1e71",
+    "roles": ["careportal", "readable"]
+  }
+]
+```
+
+**Fields**:
+- `_id`: MongoDB document ID
+- `name`: Human-readable subject name (used in policies)
+- `accessToken`: The token to use for authentication or exchange for JWT
+- `roles`: Array of role names assigned to this subject
+
+**Authentication**: Requires API secret (as `api-secret` header, SHA1 hashed) for management operations.
 
 ## Authorization Discovery (PROPOSED)
 
@@ -139,19 +211,22 @@ When a site owner registers their Nightscout with NRG, the Control Panel could i
    └─▶ GET /api/v2/authorization/subjects
        Header: api-secret: {sha1-hashed-secret}
 
-3. Nightscout returns subject list
+3. Nightscout returns subject list (actual format)
    └─▶ [
-         { "name": "readable", "permissions": ["api:*:read"] },
-         { "name": "careportal", "permissions": ["api:*:read", "api:treatments:create"] },
-         { "name": "school-nurse", "permissions": ["api:*:read", "api:treatments:create"] }
+         { "_id": "...", "name": "admin", "accessToken": "admin-7a7f752c970fce6b", "roles": ["admin"] },
+         { "_id": "...", "name": "readable", "accessToken": "readable-a1b2c3d4...", "roles": ["readable"] },
+         { "_id": "...", "name": "school-nurse", "accessToken": "school-nurse-16e6...", "roles": ["careportal", "readable"] }
        ]
 
 4. Control Panel presents options to owner
    └─▶ "We found these existing subjects on your Nightscout:
-        - readable (view only)
-        - careportal (can log treatments)
-        - school-nurse (custom role)
+        - admin (full access)
+        - readable (view only)  
+        - school-nurse (can log treatments + view)
         Which would you like to map to your groups?"
+        
+5. Control Panel stores accessTokens for runtime use
+   └─▶ No need to keep API secret for ongoing operation
 ```
 
 ### Proposed Control Panel Integration Points
@@ -176,69 +251,93 @@ To support this workflow, NRG should expose:
 
 ## Subject Management / Deprivilege (PROPOSED)
 
-> **Status**: NOT YET IMPLEMENTED. This section describes a proposed workflow for creating new Nightscout subjects with constrained permissions. This depends on Nightscout's authorization API capabilities, which need domain expert verification.
+> **Status**: NOT YET IMPLEMENTED. This section describes a proposed workflow for creating new Nightscout subjects with constrained permissions and then using their access tokens instead of the API secret.
 
 The Control Panel could create new subjects with constrained permissions, effectively "deprivileging" from the full API secret.
 
 ### Why Deprivilege?
 
+The API secret grants full administrative access (`*` permission). By creating constrained subjects and using their access tokens, NRG can operate with least-privilege access:
+
 | Scenario | Problem | Solution |
 |----------|---------|----------|
-| School nurse needs careportal access | API secret is too powerful | Create "school-nurse" subject with only careportal permissions |
-| Babysitter needs view-only | No existing "readable" subject | Create constrained subject |
-| Parent wants logging but no settings | careportal is too broad | Create custom subject with specific permissions |
+| School nurse needs careportal access | API secret is too powerful | Create "school-nurse" subject with only careportal roles |
+| Babysitter needs view-only | Sharing API secret is risky | Create constrained subject with readable role |
+| NRG ongoing operation | Storing API secret is a security risk | Configure subjects once, then use access tokens |
 
-### Proposed Deprivilege Flow
+### Proposed Deprivilege Workflow
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                   Subject Creation (Deprivilege) - PROPOSED                  │
+│                   Deprivilege Workflow - PROPOSED                            │
 └─────────────────────────────────────────────────────────────────────────────┘
 
-1. Owner requests new subject via Control Panel
-   └─▶ "Create a subject for my school nurse that can:
-        ✓ View glucose data
-        ✓ Log treatments
-        ✗ Change settings
-        ✗ Delete data"
+SETUP PHASE (one-time, uses API secret):
 
-2. Control Panel crafts subject definition
+1. Owner provides API secret during site registration
+   └─▶ Control Panel uses it to query existing subjects
+
+2. Control Panel discovers or creates needed subjects
+   └─▶ GET /api/v2/authorization/subjects (list existing)
+   └─▶ POST /api/v2/authorization/subjects (create new if needed)
+
+3. Control Panel stores the access tokens
    └─▶ {
-         "name": "school-nurse-lincoln-elem",
-         "permissions": [
-           "api:entries:read",
-           "api:treatments:read",
-           "api:treatments:create"
-         ]
+         "name": "school-nurse",
+         "accessToken": "school-nurse-16e6e9eb6ead1e71",  ← Store this
+         "roles": ["careportal", "readable"]
        }
 
-3. Control Panel sends to Nightscout (via API secret)
-   └─▶ POST /api/v2/authorization/subjects
-       Header: api-secret: {sha1-hashed-secret}
-       Body: { subject definition }
+4. API secret can now be dropped or rotated
+   └─▶ NRG no longer needs the master secret for ongoing operation
 
-4. Subject is now available for NRG policies
-   └─▶ Create policy with policy_type: "nsjwt", policy_spec: "school-nurse-lincoln-elem"
+───────────────────────────────────────────────────────────────────────────────
+
+RUNTIME PHASE (uses access token, not API secret):
+
+1. Visitor request arrives matching a policy
+   └─▶ policy_type: "nsjwt", policy_spec: "school-nurse"
+
+2. NRG uses stored access token to request JWT
+   └─▶ GET /api/v2/authorization/request/school-nurse
+       (or use access token directly depending on Nightscout config)
+
+3. JWT injected into proxied request
+   └─▶ X-NSJWT: {jwt-with-careportal-permissions}
 ```
+
+### Security Benefits
+
+| Aspect | With API Secret | With Access Tokens |
+|--------|-----------------|-------------------|
+| **Stored credential power** | Full admin (`*`) | Only assigned roles |
+| **Compromise impact** | Total system access | Limited to subject's permissions |
+| **Rotation** | Affects all subjects | Per-subject rotation possible |
+| **Audit trail** | Actions logged as "admin" | Actions logged per subject |
 
 ### Proposed Permission Templates
 
-If subject creation is supported, the Control Panel could offer templates for common deprivilege scenarios:
+The Control Panel could offer templates when creating new subjects:
 
-| Template | Permissions | Use Case |
-|----------|-------------|----------|
-| **Monitor Only** | `api:entries:read`, `api:treatments:read` | View glucose and treatments, no changes |
-| **Caregiver** | `api:*:read`, `api:treatments:create` | Full view, can log treatments |
-| **Educator** | `api:entries:read` | Just glucose data for classroom monitoring |
-| **Emergency** | `api:*:read`, `api:treatments:create`, `api:profile:read` | View profile for emergency info |
+| Template | Roles | Use Case |
+|----------|-------|----------|
+| **Monitor Only** | `readable` | View glucose and treatments, no changes |
+| **Caregiver** | `readable`, `careportal` | Full view, can log treatments |
+| **Uploader** | `devicestatus-upload` | Loop/pump status upload only |
+| **Educator** | `readable` | Just glucose data for classroom monitoring |
 
-### Implementation Notes
+### Subject Persistence
 
-**Open Questions for Domain Expert:**
-- What is the exact API for creating subjects on Nightscout?
-- Are subjects persisted or in-memory configuration?
-- Can subjects be updated/deleted after creation?
-- What happens if Nightscout restarts - are subjects preserved?
+From the security audit:
+- Subjects are stored in MongoDB `auth_subjects` collection
+- They persist across Nightscout restarts
+- Access tokens never expire until manually revoked
+
+### Open Questions
+
+- What is the exact API for creating/updating subjects on Nightscout?
+- Can subjects be deleted via API, or only via direct database access?
+- Is there a subject creation endpoint, or must subjects be configured via environment variables?
 
 ## NSJWT Exchange Flow (IMPLEMENTED)
 
@@ -444,55 +543,56 @@ Token-related data is stored across these tables:
 | Policy evaluation | `lib/policies/index.js` |
 | ACL resolution | SQL views in migrations |
 
-## Interview Questions / Domain Gaps
+## Interview Questions / Remaining Gaps
 
-The following questions need input from a Nightscout domain expert to validate the proposed workflows and fill implementation gaps.
+Many questions have been answered by the Nightscout security audit and API inspection. The following questions remain open for domain expert input.
 
-### Subject and Role Discovery (Critical for Authorization Discovery feature)
+### Answered Questions (from Security Audit)
 
-1. **Subject list endpoint**: What is the exact response format of `/api/v2/authorization/subjects`? What fields are returned?
-2. **Role list endpoint**: What does `/api/v2/authorization/roles` return? How do roles relate to subjects?
-3. **Authentication requirements**: Do these discovery endpoints require the full API secret, or can they work with lesser credentials?
-4. **Default subjects**: What subjects exist by default on a fresh Nightscout installation?
+| Question | Answer |
+|----------|--------|
+| Subject list response format | Array with `_id`, `name`, `accessToken`, `roles` fields |
+| JWT lifetime | 1 hour default |
+| JWT signing | HMAC-SHA256 with API_SECRET |
+| Subject persistence | MongoDB `auth_subjects` collection, survives restarts |
+| Access token format | `{name}-{sha1(apiSecret+name).substring(0,16)}` |
+| Default roles | admin, readable, denied, careportal, devicestatus-upload, activity-create |
+| Permission format | Shiro-style `domain:action:instance` |
+| Brute-force protection | IP delay list with cumulative delays |
 
-### Subject Creation and Management (Critical for Deprivilege feature)
+### Remaining Questions for Domain Expert
 
-5. **Subject creation API**: Is there a POST endpoint to create new subjects? What's the exact request format?
-6. **Subject persistence**: Are subjects stored in MongoDB or environment config (e.g., `AUTH_DEFAULT_ROLES`)? Do they survive Nightscout restarts?
-7. **Subject updates**: Can existing subjects be modified or deleted via API?
-8. **Heroku/Railway limitations**: Do managed hosting platforms restrict subject management?
+#### Subject Management API
 
-### Token Request and Exchange (Validating current implementation)
+1. **Subject creation**: Is there a POST endpoint to create new subjects via API? What's the request format?
+2. **Subject modification**: Can existing subjects be updated or deleted via API?
+3. **AUTH_DEFAULT_ROLES**: How does this environment variable interact with API-created subjects?
 
-9. **Token request authentication**: Does `/api/v2/authorization/request/{subject}` require the API secret header, or can any client request a token for a known subject?
-10. **Token lifetime**: What determines the JWT expiration time? Is it configurable per-subject or globally?
-11. **Token content**: What claims are included in the JWT beyond `iat`, `exp`, and permissions?
-12. **Token validation**: How does Nightscout validate incoming JWTs? Is there a shared secret or key pair?
+#### Token Exchange Details
 
-### Permission Model
+4. **Token request auth**: Does `/api/v2/authorization/request/{subject}` require API secret, or can it work with just the access token?
+5. **Access token vs subject name**: Can we request a JWT using the access token directly, or must we use the subject name?
 
-13. **Permission strings**: What are all available permission strings beyond the common ones (`*`, `api:*:read`, `api:treatments:create`)?
-14. **Permission inheritance**: Do some permissions imply others (e.g., does `api:treatments:*` include `:create`, `:read`, `:update`, `:delete`)?
-15. **Custom permissions**: Can sites define custom permission strings, or are they limited to the built-in set?
+#### Platform Variations
 
-### Backward Compatibility
+6. **Heroku/Railway**: Do managed hosting platforms restrict subject management or authorization APIs?
+7. **Minimum version**: What's the minimum Nightscout version that supports the v2 authorization API?
+8. **Fallback**: How should NRG handle instances that don't support v2 authorization?
 
-16. **API versions**: Which Nightscout versions support the v2 authorization API? What's the minimum version?
-17. **Fallback behavior**: How should NRG handle Nightscout instances that don't support v2 authorization?
-18. **Legacy token format**: Are there older token formats we need to support?
+#### Security Edge Cases
 
-### Edge Cases and Error Handling
+9. **Secret rotation impact**: If API_SECRET is rotated, are existing access tokens invalidated (since they're derived from the secret)?
+10. **Token revocation**: Is there a way to invalidate access tokens or JWTs before their natural expiration?
+11. **Error responses**: What HTTP status/response does Nightscout return for invalid subject or unauthorized requests?
 
-19. **Invalid subject**: What HTTP status/response does Nightscout return when requesting a token for a non-existent subject?
-20. **Rate limiting**: Does Nightscout rate-limit authorization API calls?
-21. **Plugin permissions**: How do Nightscout plugins interact with the permission system?
+### Questions No Longer Needed
 
-### Security Considerations
-
-22. **Secret rotation**: If a site owner rotates their API secret, what happens to existing subjects and cached tokens?
-23. **Token revocation**: Is there a way to invalidate tokens before expiration?
-24. **Audit trail**: Does Nightscout log which subjects/tokens accessed what data?
-25. **Minimum permissions**: What's the absolute minimum permission set for basic glucose viewing (for the "monitor only" template)?
+The following were answered and incorporated into the documentation:
+- JWT structure and claims
+- Default roles and permissions
+- Token derivation formula
+- Subject storage location
+- Permission string format
 
 ## Related Documentation
 

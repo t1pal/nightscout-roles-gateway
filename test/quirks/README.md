@@ -105,6 +105,38 @@ Test SL-05 proves this constraint works by attempting to insert a duplicate `exp
 
 ---
 
+---
+
+### TRG-SO-Q01: Sort order trigger not installed
+
+**View/Table**: `connection_policies`  
+**Status**: Observed, documented  
+**Description**: Migration `20220508223845_add_sort_order_to_connection_policy.js` has `return Promise.resolve(true);` at the start, which bypasses all the trigger creation code. The `initialize_connection_policy_sort` trigger function is never created.
+
+**Behavior**:
+- First policy per site gets `sort = NULL`
+- Subsequent policies get incrementing sort values (1, 2, 3...) because they count existing policies
+- This inconsistency means the first policy has NULL while others have numbers
+
+**Impact**: Applications must:
+- Provide explicit sort values when creating policies
+- Handle NULL in first-match sort logic
+- Use `COALESCE(sort, 0)` in ORDER BY clauses
+
+---
+
+### TRG-HS-Q01: API secret column limited to 255 characters
+
+**Table**: `registered_sites`  
+**Status**: By design  
+**Description**: The `api_secret` column is defined as `varchar(255)`. PostgreSQL rejects INSERT/UPDATE operations with secrets longer than 255 characters.
+
+**Impact**: 
+- API secret validation should enforce maximum length client-side
+- Real-world Nightscout secrets are typically 12-64 characters, well within limits
+
+---
+
 ## Adding New Quirks
 
 Use this template:

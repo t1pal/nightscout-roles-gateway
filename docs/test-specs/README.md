@@ -100,6 +100,7 @@ NODE_ENV=test npm test -- --grep "site_policy_schedules"
 | Decision function | D-01 to D-09 | 15 | ✅ Implemented |
 | API secret matching | AS-01 to AS-07, AS-FB01 to AS-FB03 | 10 | ✅ Implemented |
 | Email normalization | GI-01 to GI-04 | 11 | ✅ Implemented |
+| Site lookup | SL-01 to SL-05 | 5 (+1 skipped) | ✅ Implemented (SL-05 skipped, see SL-Q01) |
 | Kratos identity | IR-* | - | 🔲 Requires mocking |
 | API inspection | BI-*, AI-* | - | 🔲 Requires network |
 
@@ -107,13 +108,13 @@ NODE_ENV=test npm test -- --grep "site_policy_schedules"
 
 ## Next Steps for Contributors
 
-With API Secret Matching tests now complete, the Mode C (Legacy Escape) authorization path is fully covered. The next high-value testing opportunities are:
+With Site Lookup tests now complete, the handler chain from site resolution through decision is well-covered. The next high-value testing opportunities are:
 
 1. **Warden end-to-end integration tests** (E2E-01 to E2E-06 in phase1-authorization.md) - This would exercise the complete handler chain with real database fixtures, providing the highest confidence that all components work together correctly.
 
 2. **Kratos identity resolution** (IR-*) - Requires mocking the Ory Kratos API responses. Use the same mocking pattern established in the policy tests.
 
-3. **Site lookup tests** (SL-01 to SL-05) - Test the `find_expected_name` handler which loads site configuration and joins with authenticity records.
+3. **ACL lookup tests** (ACL-01 to ACL-04) - Test `get_acls` and `get_acl_by_identity_param` handlers which populate `res.locals.acl` from the unified view.
 
 ## Discovered Quirks
 
@@ -125,6 +126,7 @@ See `test/quirks/README.md` for documented edge cases and unexpected behaviors o
 | SPVA-Q01 | Schedule filtering uses database server time, not client time |
 | UASP-Q01 | COALESCE skips NULL schedule specs (by design) |
 | UASP-Q02 | Multiple active schedules per policy create duplicate ACL entries |
+| SL-Q01 | Unique constraint on expected_name prevents duplicate sites (by design) |
 
 ## Related Documentation
 

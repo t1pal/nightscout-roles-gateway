@@ -175,6 +175,15 @@ Critical security checks (secret hashing, blocklist enforcement) happen in datab
 ## Recent Changes
 
 **January 2026**:
+- Implemented find_expected_name handler tests (6 tests, SL-01 to SL-05)
+  - Valid site lookup (SL-01)
+  - Unknown site returns empty array (SL-02)
+  - BYOD site with authenticity record includes confirmed_upstream, status, acceptable (SL-03)
+  - BYOD site without authenticity check has null acceptable (SL-04)
+  - Multiple sites edge case skipped due to unique constraint (SL-05, see quirk SL-Q01)
+  - Located in `test/unit/policies/find_expected_name.test.js`
+- Added createAuthenticityRecord fixture helper to `test/setup/fixtures.js`
+- Documented quirk SL-Q01: Unique constraint on expected_name prevents duplicate sites
 - Implemented matches_api_secret() unit tests (10 tests, AS-01 to AS-07 plus fallback tests)
   - Valid secret with all conditions met (AS-01)
   - Valid secret but escape disabled (AS-02)

@@ -76,6 +76,30 @@ The difference is exactly 86400 seconds (1 day). This means:
 
 ---
 
+### SL-Q01: Unique constraint on expected_name prevents duplicate sites
+
+**Table**: `registered_sites`  
+**Status**: By design  
+**Description**: The `expected_name` column in `registered_sites` has a unique constraint. The `find_expected_name` handler includes code to handle the case where multiple rows are returned (calling `next(rows)` when `rows.length != 1`), but this scenario cannot occur in practice because the database enforces uniqueness.
+
+**Code Path**:
+```javascript
+// lib/policies/index.js - find_expected_name
+if (rows.length == 1) {
+  req.site = rows[0];
+  next( );
+  return;
+}
+next(rows); // This path handles 0 rows OR >1 rows
+```
+
+**Impact**: 
+- The >1 row case is defense-in-depth code that can never be triggered
+- The 0 row case (unknown site) is the only alternative path
+- Test SL-05 is marked as skipped because the unique constraint prevents creating the test scenario
+
+---
+
 ## Adding New Quirks
 
 Use this template:

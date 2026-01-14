@@ -91,15 +91,17 @@ NODE_ENV=test npm test -- --grep "site_policy_schedules"
 
 | Area | Spec IDs | Tests | Status |
 |------|----------|-------|--------|
-| View: site_policy_schedules | SPV-* | 8 | ✅ Implemented |
+| View: site_policy_schedules | SPV-* | 6 | ✅ Implemented |
 | View: site_policy_schedules_active | SPVA-* | 6 | ✅ Implemented |
-| View: unified_active_site_policies | UASP-* | 7 | ✅ Implemented |
+| View: unified_active_site_policies | UASP-* | 8 | ✅ Implemented |
 | Static analysis | SA-01 to SA-14 | 19 | ✅ Implemented |
 | describe() summary | DS-01 to DS-05 | 8 | ✅ Implemented |
-| Decision function | D-01 to D-09 | - | 🔲 Planned |
-| Email normalization | GI-01 to GI-04 | - | 🔲 Planned |
+| Decision function | D-01 to D-09 | 15 | ✅ Implemented |
+| Email normalization | GI-01 to GI-04 | 11 | ✅ Implemented |
 | Kratos identity | IR-* | - | 🔲 Requires mocking |
 | API inspection | BI-*, AI-* | - | 🔲 Requires network |
+
+*Last updated: January 2026*
 
 ## Discovered Quirks
 

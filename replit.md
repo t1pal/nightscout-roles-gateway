@@ -175,6 +175,18 @@ Critical security checks (secret hashing, blocklist enforcement) happen in datab
 ## Recent Changes
 
 **January 2026**:
+- Implemented decision() function unit tests (15 tests, D-01 to D-09 plus edge cases)
+  - Site disabled check (D-01)
+  - BYOD acceptable check with strictly_nightscout mode (D-02)
+  - API secret matching bypass (D-03)
+  - Identity required with ACL allow/deny (D-04, D-05, D-06)
+  - Anonymous access when require_identities is false (D-07)
+  - NSJWT policy with/without token (D-08, D-09)
+  - Edge cases for precedence and overrides
+  - Located in `test/unit/policies/decision.test.js`
+- Updated test coverage documentation in `docs/test-specs/README.md`
+  - Corrected email normalization status from "Planned" to "Implemented" (11 tests)
+  - Added decision function as "Implemented" (15 tests)
 - Implemented describe() function unit tests (8 tests, DS-01 to DS-05 plus edge cases)
   - Summary generation with status OK/not ok and acceptable flag
   - Correct categorization of passing, warning (non-mandatory), and reject (mandatory) counts

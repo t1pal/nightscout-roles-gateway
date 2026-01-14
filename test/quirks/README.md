@@ -179,22 +179,12 @@ The test file checks this flag and uses Mocha's `this.skip()` to mark Hydra-depe
 
 **Test File**: `test/integration/warden_flow.test.js`  
 **Status**: Expected (external dependency)  
-**Description**: All warden E2E tests go through the `kratos_whoami` handler which calls the Kratos API. The original handler only handles 401 responses gracefully - connection errors (ECONNREFUSED) cause a TypeError when accessing `error.response.status` on an undefined object.
-
-**Original Code** (`lib/privy/index.js`):
-```javascript
-.catch(function (error) {
-  if (error.response.status == '401') {  // TypeError if error.response is undefined
-    // handle 401
-  }
-  next( );
-});
-```
+**Description**: Warden E2E tests go through the `kratos_whoami` handler which calls the Kratos API. The handler now gracefully handles connection errors by checking `error.response` before accessing properties.
 
 **Impact**:
-- All warden E2E tests require Kratos connectivity
+- Warden E2E tests require a Kratos instance or mock server for identity-based access tests
 - Set `SKIP_KRATOS_TESTS=1` to skip these tests
-- In production, Kratos must be available for the warden endpoint to function
+- Without Kratos, requests fall through to anonymous handling
 
 ---
 

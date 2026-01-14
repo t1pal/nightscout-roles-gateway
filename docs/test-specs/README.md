@@ -46,6 +46,17 @@ Each spec document includes an **Appendix: Coverage Mapping** table that maps co
 
 ## Test Types
 
+### View Tests (Implemented)
+
+Test PostgreSQL views for accuracy without external network dependencies:
+- `site_policy_schedules` - Schedule expansion and fill_pattern pairing
+- `site_policy_schedules_active` - Time window filtering
+- `unified_active_site_policies` - COALESCE merge logic and ACL sort order
+
+Location: `test/views/`
+
+**Key Insight**: These views use PostgreSQL-specific features (UNNEST, string_to_array, window functions) and cannot be tested with SQLite. Tests must use PostgreSQL.
+
 ### Unit Tests
 
 Test isolated functions with mocked dependencies:
@@ -59,6 +70,30 @@ Test API endpoints with database fixtures:
 - Full warden request flow
 - Invitation acceptance workflow
 - Complete BYOD inspection pipeline
+
+## Running Tests
+
+```bash
+# Run all tests
+NODE_ENV=test npm test
+
+# Run view tests only
+NODE_ENV=test npm test -- --grep "View:"
+
+# Run specific view test
+NODE_ENV=test npm test -- --grep "site_policy_schedules"
+```
+
+## Discovered Quirks
+
+See `test/quirks/README.md` for documented edge cases and unexpected behaviors observed during testing. Key findings:
+
+| Quirk ID | Summary |
+|----------|---------|
+| SPV-Q01 | Mismatched fill_pattern and segment count uses modulo cycling |
+| SPVA-Q01 | Schedule filtering uses database server time, not client time |
+| UASP-Q01 | COALESCE skips NULL schedule specs (by design) |
+| UASP-Q02 | Multiple active schedules per policy create duplicate ACL entries |
 
 ## Related Documentation
 

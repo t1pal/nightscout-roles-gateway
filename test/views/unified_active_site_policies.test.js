@@ -76,9 +76,8 @@ describe('View: unified_active_site_policies', function() {
 
       const rows = await db.queryView('unified_active_site_policies', { site_id: site.id });
       
-      if (rows.length > 0) {
-        console.log('UASP-03: policy_spec =', rows[0].policy_spec);
-      }
+      expect(rows).to.have.length(1);
+      expect(rows[0].policy_spec).to.equal('base-fallback');
     });
   });
 

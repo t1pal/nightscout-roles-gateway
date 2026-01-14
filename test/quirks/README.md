@@ -27,17 +27,27 @@ When a test discovers unexpected behavior:
 
 ---
 
-### SPVA-Q01: Timezone handling uses database server time
+### SPVA-Q01: Sunday-based week anchor (not Monday)
 
 **View**: `site_policy_schedules_active`  
-**Status**: By design  
-**Description**: The active schedule filtering uses the PostgreSQL server's time (`CURRENT_TIMESTAMP`), not client-provided time. This means:
+**Status**: By design (important!)  
+**Description**: The view uses a custom week anchor calculation that starts the week on **Sunday**, not PostgreSQL's default Monday:
 
-- All schedule evaluations are relative to server timezone
-- Clients in different timezones see schedules based on server time
-- UTC is typically used in cloud deployments
+```sql
+-- View uses this (Sunday-based):
+now() - (date_trunc('week', now() + interval '1 day') - interval '1 day')
 
-**Impact**: Schedule windows may not align with user's local time expectations.
+-- NOT this (Monday-based):
+now() - date_trunc('week', now())
+```
+
+The difference is exactly 86400 seconds (1 day). This means:
+- All schedule segment offsets are relative to Sunday 00:00:00
+- Segment 0 = Sunday midnight
+- Segment 86400 = Monday midnight
+- This aligns with JavaScript's `Date.getDay()` which also uses Sunday = 0
+
+**Impact**: When creating schedules, segment offsets must be calculated from Sunday, not Monday. Test fixtures use Sunday-based `dayOffset()` helper to match this behavior.
 
 ---
 

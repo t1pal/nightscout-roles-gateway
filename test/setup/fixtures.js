@@ -54,6 +54,12 @@ const fixtures = {
   },
 
   createPolicy(knex, overrides = {}) {
+    if (!overrides.site_id) {
+      throw new Error('createPolicy requires site_id');
+    }
+    if (!overrides.group_definition_id) {
+      throw new Error('createPolicy requires group_definition_id');
+    }
     const id = overrides.id || generateId();
     const data = {
       id,
@@ -71,6 +77,9 @@ const fixtures = {
   },
 
   createSchedule(knex, overrides = {}) {
+    if (!overrides.policy_id) {
+      throw new Error('createSchedule requires policy_id');
+    }
     const id = overrides.id || generateId();
     const data = {
       id,

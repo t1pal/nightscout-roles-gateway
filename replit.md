@@ -66,6 +66,16 @@ The server runs on port 5000. Use the "API Server" workflow in Replit.
 │   │   └── oidc-actor-identity-proposal.md  # OIDC plugin for NS Core
 │   └── ...
 └── test/                   # Test files
+    ├── setup/              # Test infrastructure
+    │   ├── database.js     # PostgreSQL connection helpers
+    │   └── fixtures.js     # Test data factories
+    ├── views/              # View accuracy tests
+    │   ├── site_policy_schedules.test.js
+    │   ├── site_policy_schedules_active.test.js
+    │   └── unified_active_site_policies.test.js
+    ├── quirks/             # Documented edge cases
+    │   └── README.md
+    └── integration/        # API integration tests
 ```
 
 ## Core API Endpoints
@@ -165,6 +175,11 @@ Critical security checks (secret hashing, blocklist enforcement) happen in datab
 ## Recent Changes
 
 **January 2026**:
+- Implemented view accuracy test suite (21 passing tests)
+  - Tests for `site_policy_schedules`, `site_policy_schedules_active`, `unified_active_site_policies`
+  - Verified schedule expansion, time window filtering, COALESCE merge, ACL sort order
+  - Documented quirks: modulo cycling for mismatched patterns, timezone handling, duplicate entries from multiple schedules
+- Created test infrastructure: database helpers, fixture factories, quirks registry
 - Created comprehensive architecture documentation (`docs/ARCHITECTURE.md`)
 - Added migration narrative explaining schema evolution (`docs/MIGRATIONS-NARRATIVE.md`)
 - Created maintenance guide for debugging (`docs/MAINTENANCE-GUIDE.md`)
@@ -173,6 +188,20 @@ Critical security checks (secret hashing, blocklist enforcement) happen in datab
 - Documented owner management API, identity access, and token management
 
 ## Development Notes
+
+### Running Tests
+```bash
+# Run all tests (requires PostgreSQL)
+NODE_ENV=test npm test
+
+# Run view accuracy tests
+NODE_ENV=test npm test -- --grep "View:"
+
+# Run specific test file
+NODE_ENV=test npm test -- --grep "unified_active_site_policies"
+```
+
+**Note**: View tests require PostgreSQL. SQLite cannot run these tests because the views use PostgreSQL-specific features (UNNEST, string_to_array, window functions).
 
 ### Running Migrations
 ```bash

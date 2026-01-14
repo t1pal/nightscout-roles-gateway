@@ -210,6 +210,62 @@ The test file checks this flag and uses Mocha's `this.skip()` to mark Hydra-depe
 
 ---
 
+### E2E-Q03: Portal endpoint bypasses Kratos for identity testing
+
+**Endpoint**: `/warden/v1/portal/:subject/backend/for/:expected_name`  
+**Status**: By design (intentional testing aid)  
+**Description**: Unlike the `/warden/v1/active/` endpoints which include `kratos_whoami` in the middleware chain, the portal endpoint takes the subject directly as a URL parameter. This allows testing identity-mapped access flows without needing a Kratos instance.
+
+**Middleware Comparison**:
+```javascript
+// /warden/v1/active/ - requires Kratos session:
+find_expected_name → kratos_whoami → get_acl_by_identity_param → ...
+
+// /warden/v1/portal/:subject/ - subject from URL param:
+find_expected_name → get_acl_by_identity_param → ...
+```
+
+**Impact**:
+- Tests can verify identity-mapped access (AM-B01 through AM-B04, MC-01, MC-03) without Kratos
+- Located in `test/integration/portal_identity_access.test.js`
+- 8 tests pass, 1 pending (MC-02 due to E2E-Q02 async issue)
+
+---
+
+### MAS-Q01: matches_api_secret missing .catch(next)
+
+**Handler**: `lib/policies/index.js - matches_api_secret`  
+**Status**: Observed, fix recommended  
+**Description**: The `matches_api_secret` handler uses a Promise chain but does not have a `.catch(next)` to handle errors:
+
+```javascript
+// Current code (missing error handling):
+persist.entities.Site.db.findById(...).andWhere(...).join(...).then(function (matches) {
+  res.locals.policy.has_matching_api_secret = ...;
+  next( );
+});
+// Missing: .catch(next);
+```
+
+**Impact**:
+- Database connection errors or query failures will result in unhandled promise rejections
+- In Node.js 15+, unhandled rejections can crash the process
+- The fix is straightforward: add `.catch(next)` to the Promise chain
+
+**Recommended Fix**:
+```javascript
+persist.entities.Site.db.findById(...)
+  .andWhere(...)
+  .join(...)
+  .then(function (matches) {
+    res.locals.policy.has_matching_api_secret = ...;
+    next( );
+  })
+  .catch(next);  // Add this line
+```
+
+---
+
 ## Adding New Quirks
 
 Use this template:

@@ -80,6 +80,56 @@ const anonymousIdentity = {
 | GI-03 | Mixed case spec | Spec stored as `Alice@Example.COM` | Should be stored lowercase |
 | GI-04 | Email mismatch | Spec: `alice@example.com`, User email: `bob@example.com` | No match |
 
+#### Implementation Notes (GI-01 to GI-04)
+
+**Test File**: `test/unit/privy/email_normalization.test.js`
+
+**GI-03 Implementation**:
+The `adjustEmailSpec()` function in `lib/privy/index.js` normalizes email specs to lowercase during the API storage flow. It is exported for testability:
+
+```javascript
+const { adjustEmailSpec } = require('../../../lib/privy');
+
+function adjustEmailSpec(elem) {
+  if (elem.identity_type == 'email') {
+    elem.identity_spec = elem.identity_spec.toLowerCase();
+  }
+}
+```
+
+Note: The function mutates the object in place (no return value). It is called by the internal `adjust()` wrapper during suggestion processing.
+
+**GI-02 Implementation**:
+The `normalizeUserEmail()` function in `lib/privy/index.js` normalizes user emails to lowercase before querying. It is exported for testability:
+
+```javascript
+const { normalizeUserEmail } = require('../../../lib/privy');
+
+function normalizeUserEmail(email) {
+  if (typeof email === 'string') {
+    return email.toLowerCase();
+  }
+  return email;
+}
+```
+
+The `search_inclusions()` and `suggest_join_spec()` handlers use this function:
+
+```javascript
+var query = {
+  identity_type: 'email',
+  identity_spec: normalizeUserEmail(req.user.traits.email)
+};
+```
+
+**Note**: PostgreSQL string matching is case-sensitive, so both the stored specs (via `adjustEmailSpec()`) and user emails (via `normalizeUserEmail()`) must be normalized to lowercase for matching to work correctly.
+
+**Tested Behavior** (11 tests):
+- `normalizeUserEmail('Alice@Example.COM')` → `'alice@example.com'`
+- Spec stored as lowercase: `"alice@example.com"`
+- User email normalized before query
+- Result: **Match** (1 result)
+
 ### Search Inclusions (`search_inclusions`)
 
 **Route Parameter Availability**: The `search_inclusions` handler reads parameters differently based on which route mounts it:

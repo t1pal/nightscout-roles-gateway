@@ -109,6 +109,20 @@ const fixtures = {
     return knex('joined_groups').insert(data).returning('*').then(rows => rows[0]);
   },
 
+  createOAuthCredential(knex, overrides = {}) {
+    const id = overrides.id || generateId();
+    const data = {
+      id,
+      owner_ref: overrides.owner_ref || 'test-owner-' + generateId(),
+      expected_name: overrides.expected_name || 'test-site-' + generateId(),
+      client_id: overrides.client_id || 'client-' + generateId(),
+      client_secret: overrides.client_secret || 'secret-' + generateId(),
+      ...overrides
+    };
+    
+    return knex('oauth2_credentials').insert(data).returning('*').then(rows => rows[0]);
+  },
+
   scheduleHelpers: {
     SECONDS_IN_DAY: 86400,
     SECONDS_IN_WEEK: 604800,

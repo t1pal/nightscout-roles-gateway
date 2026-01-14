@@ -10,7 +10,7 @@ module.exports = {
   },
   test: {
     client: 'postgresql',
-    connection: 'postgres://test_nrg_u:test_nrg_p@hostedpg.service.consul/test_nrg',
+    connection: process.env.DATABASE_URL || 'postgres://test_nrg_u:test_nrg_p@hostedpg.service.consul/test_nrg',
     pool: {
       idleTimeoutMillis: 500,
       min: 0,

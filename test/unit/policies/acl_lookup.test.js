@@ -17,7 +17,6 @@ describe('Unit: ACL Lookup Handlers (ACL-01 to ACL-04)', function() {
   let mockServer;
 
   before(async function() {
-    await db.migrate();
     await db.truncateAllData();
     
     env = require('../../../env');

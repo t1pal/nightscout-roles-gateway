@@ -81,9 +81,6 @@ describe('Integration: NSJWT Token Exchange (AM-B05, AM-B06)', function() {
     env = require('../../env');
     store = require('../../lib/storage')(env);
     store.initialize();
-    
-    await store.migrate.rollback();
-    await store.migrate.latest();
 
     testServer = restify.createServer({ name: 'nsjwt-test' });
     testServer.use(restify.plugins.queryParser());
@@ -163,10 +160,6 @@ describe('Integration: NSJWT Token Exchange (AM-B05, AM-B06)', function() {
   after(async function() {
     if (testServer) {
       testServer.close();
-    }
-    if (store) {
-      await store.migrate.rollback();
-      store.destroy();
     }
   });
 

@@ -24,23 +24,10 @@ describe("Integration Test", function ( ) {
     store.initialize( );
     my = { store };
     server = require('../../server')(env, my);
-    store.migrate.rollback( )
-        .then(function ( ) {
-          store.migrate.latest( )
-          .then(function ( ) {
-            done( );
-          })
-        }).catch(done);
+    done( );
   });
   after(function (done) {
-      my.store.migrate.rollback( )
-        .then(function ( ) {
-          my.store.destroy( );
-          done( );
-        })
-        .catch(function (err) {
-          done(err);
-        });
+    done( );
   });
 
   describe("Site Registration", function ( ) {

@@ -33,15 +33,9 @@ describe('Integration: Portal Endpoint Identity Access (E2E-Q03)', function() {
     store.initialize();
     my = { store };
     server = require('../../server')(env, my);
-    await store.migrate.rollback();
-    await store.migrate.latest();
   });
 
   after(async function() {
-    if (store) {
-      await store.migrate.rollback();
-      store.destroy();
-    }
   });
 
   beforeEach(async function() {

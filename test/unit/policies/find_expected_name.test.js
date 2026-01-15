@@ -18,6 +18,10 @@ describe('Integration: find_expected_name handler', function() {
   let entities;
   
   before(async function() {
+    // Ensure migrations have run - the global hooks should handle this,
+    // but we ensure the connection is fresh and migrations are applied
+    await db.migrate();
+    
     knex = db.knex;
     
     mockEnv = {
@@ -39,7 +43,7 @@ describe('Integration: find_expected_name handler', function() {
   });
   
   after(async function() {
-    await db.destroy();
+    // Connection cleanup handled by global hooks
   });
   
   function createMockReq(expectedName) {

@@ -34,9 +34,6 @@ describe('Integration: API-SECRET Middleware (AS-* specs)', function() {
     env = require('../../env');
     store = require('../../lib/storage')(env);
     store.initialize();
-    
-    await store.migrate.rollback();
-    await store.migrate.latest();
 
     testServer = restify.createServer({ name: 'api-secret-test' });
     testServer.use(restify.plugins.queryParser());
@@ -105,10 +102,6 @@ describe('Integration: API-SECRET Middleware (AS-* specs)', function() {
   });
 
   after(async function() {
-    if (store) {
-      await store.migrate.rollback();
-      store.destroy();
-    }
     if (testServer) {
       testServer.close();
     }

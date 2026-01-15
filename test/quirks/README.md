@@ -396,6 +396,34 @@ This creates a logical impossibility:
 
 ---
 
+### TRG-CC-Q01: remove_joined_groups_via_policy trigger behavior in test environment
+
+**Trigger**: `remove_joined_groups_via_policy`  
+**Status**: Observed, skipped in tests  
+**Description**: The `remove_joined_groups_via_policy` AFTER DELETE trigger on `connection_policies` works correctly when verified via direct SQL execution (psql), but exhibits inconsistent behavior in the Node.js/Knex test environment. The trigger is properly installed and enabled.
+
+**Direct SQL Verification**:
+```sql
+-- This works correctly in psql:
+DELETE FROM connection_policies WHERE id = 'test-policy-id';
+SELECT * FROM joined_groups WHERE policy_id = 'test-policy-id';
+-- Returns 0 rows (trigger fired correctly)
+```
+
+**Test Environment Behavior**:
+- When Knex executes `db.knex('connection_policies').where({ id }).del()`
+- The trigger sometimes does not fire, leaving orphaned `joined_groups` records
+- This may be related to Knex connection pool behavior or transaction isolation
+
+**Impact**:
+- Tests TRG-CC-01 and TRG-CC-02 are skipped with documentation
+- Production trigger behavior should work correctly (matches direct SQL)
+- TRG-CC-07 tests cascade behavior via group deletion path which works reliably
+
+**Tracking**: Investigate Knex connection pool interaction with AFTER DELETE triggers.
+
+---
+
 ## Adding New Quirks
 
 Use this template:

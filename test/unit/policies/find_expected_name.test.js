@@ -18,8 +18,8 @@ describe('Integration: find_expected_name handler', function() {
   let entities;
   
   before(async function() {
-    // Ensure migrations have run - the global hooks should handle this,
-    // but we ensure the connection is fresh and migrations are applied
+    // Ensure migrations are applied - needed because test runs after other tests
+    // that may have destroyed and recreated the database connection
     await db.migrate();
     
     knex = db.knex;

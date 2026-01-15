@@ -73,13 +73,20 @@ npm run test:all      # Runs all tests (requires Hydra/Kratos)
 | `test/integration/portal_identity_access.test.js` | 9 | 8 passing, 1 pending |
 | `test/integration/api_secret_middleware.test.js` | 8 | All passing |
 | `test/integration/nsjwt_token_exchange.test.js` | 6 | All passing |
-| `test/integration/warden_flow.test.js` | 9 | All passing |
+| `test/integration/warden_flow.test.js` | 9 | All pending (Kratos) |
 | `test/integration/site_registration.test.js` | 3 | 1 passing, 2 skipped (Hydra) |
 | `test/views/*` | 34 | All passing |
-| `test/triggers/*` | 27 | All passing |
-| `test/unit/*` | 54 | All passing |
+| `test/triggers/*` | 29 | All passing |
+| `test/unit/*` | 77 | All passing |
 
-**Total**: ~175 passing, 13 pending (Hydra/Kratos skipped), 4 failing (view tests with external dependencies)
+**Total**: 189 passing, 16 pending (Hydra/Kratos skipped, TRG-CC-01/02 skipped), 0 failing
+
+### Test Infrastructure
+
+Tests use centralized migration management via Mocha root hooks (`.mocharc.json` + `test/setup/hooks.js`). This ensures:
+- Migrations run once before all tests
+- Migration locks are cleared before running
+- Database connections are properly cleaned up after tests
 
 ### Owner API Endpoints Tested
 
@@ -106,3 +113,4 @@ See `test/quirks/README.md` for detailed documentation of observed behaviors:
 - **OWN-ACL-Q01**: Unassigned groups query returns empty for truly unassigned groups
 - **NSJWT-Q01**: Async timing in token exchange handler
 - **E2E-Q02**: matches_api_secret async timing
+- **TRG-CC-Q01**: remove_joined_groups_via_policy trigger behavior in test environment (trigger works in direct SQL verification)

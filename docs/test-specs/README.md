@@ -133,10 +133,13 @@ NODE_ENV=test npm test -- --grep "sync_hashed_api_secret"
 | Integration: portal_identity_access | AM-B01 to AM-B04, ACL-02, MC-01, MC-03 | 11 (10 pass, 1 pending) | ✅ Implemented |
 | Integration: api_secret_middleware | AS-01 to AS-05, AS-FB01, MC-02 | 7 | ✅ Implemented (custom test server) |
 | Integration: nsjwt_token_exchange | AM-B05, AM-B06 | 6 | ✅ Implemented (custom test server) |
+| Integration: privy_consent_flow | JG-01, SJ-*, RV-*, IF-* | 13 | ✅ Implemented (portal endpoint bypass) |
+| Integration: owner_site_deletion | OWN-SITE-DEL-* | 7 | ✅ Implemented (documents quirks Q01-Q04) |
+| Integration: privy_edge_cases | EC-01, EC-05, EC-06 | 9 | ✅ Implemented |
 | Kratos identity | IR-* | - | 🔲 Requires mocking |
 | API inspection | BI-*, AI-* | - | 🔲 Requires network |
 
-**Test Totals**: 164+ passing, 14 pending/skipped (Hydra: `SKIP_HYDRA_TESTS=1`, Kratos: `SKIP_KRATOS_TESTS=1`)
+**Test Totals**: 218 passing, 16 pending/skipped (Hydra: `SKIP_HYDRA_TESTS=1`, Kratos: `SKIP_KRATOS_TESTS=1`)
 
 *Last updated: January 2026*
 
@@ -145,8 +148,8 @@ NODE_ENV=test npm test -- --grep "sync_hashed_api_secret"
 The following areas still need test coverage:
 
 ### Priority 1: API Endpoints (Owner & Privy)
-- **Owner Management API** (`/api/v1/owner/*`) - Site registration, group management, policy CRUD
-- **Privy Identity API** (`/api/v1/privy/*`) - Invitation handling, consent flows
+- **Owner Management API** (`/api/v1/owner/*`) - ✅ Groups, inclusions, synopsis, ACLs tested (25 tests); site deletion cascade quirks documented
+- **Privy Identity API** (`/api/v1/privy/*`) - ✅ Consent flow tests added (13 tests); edge cases tested (9 tests)
 
 ### Priority 2: External Service Dependencies
 - **Kratos identity flow** (IR-*) - Requires mock Kratos server for `/sessions/whoami`
@@ -233,6 +236,10 @@ See `test/quirks/README.md` for documented edge cases and unexpected behaviors o
 | MAS-Q01 | `matches_api_secret` handler missing `.catch(next)` - FIXED |
 | ACL-03-Q01 | undefined vs null for missing ACL entries (consistency concern) |
 | NSJWT-Q01 | Async timing issue in token exchange handler - mitigated in tests, production still affected |
+| OWN-SITE-DEL-Q01 | Site deletion does NOT cascade to connection_policies (no FK constraint) |
+| OWN-SITE-DEL-Q02 | Site deletion does NOT cascade to joined_groups (no FK constraint) |
+| OWN-SITE-DEL-Q03 | Site deletion does NOT cascade to oauth2_credentials (no FK constraint) |
+| OWN-SITE-DEL-Q04 | Group deletion does NOT cascade to connection_policies (trigger only deletes inclusions) |
 
 ## Related Documentation
 

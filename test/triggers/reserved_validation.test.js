@@ -11,7 +11,6 @@ describe('Trigger: Reserved Name/Upstream Validation', function() {
   this.timeout(30000);
 
   before(async function() {
-    await db.migrate();
     await db.truncateAllData();
   });
 

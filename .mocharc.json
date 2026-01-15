@@ -1,0 +1,5 @@
+{
+  "require": ["test/setup/hooks.js"],
+  "recursive": true,
+  "timeout": 30000
+}

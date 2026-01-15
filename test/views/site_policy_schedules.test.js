@@ -11,7 +11,6 @@ describe('View: site_policy_schedules', function() {
   this.timeout(30000);
 
   before(async function() {
-    await db.migrate();
     await db.truncateAllData();
   });
 

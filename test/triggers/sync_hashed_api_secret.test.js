@@ -12,7 +12,6 @@ describe('Trigger: sync_hashed_api_secret', function() {
   this.timeout(30000);
 
   before(async function() {
-    await db.migrate();
     await db.truncateAllData();
   });
 

@@ -11,7 +11,6 @@ describe('View: unified_active_site_policies', function() {
   this.timeout(30000);
 
   before(async function() {
-    await db.migrate();
     await db.truncateAllData();
   });
 

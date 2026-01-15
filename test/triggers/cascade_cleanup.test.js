@@ -11,7 +11,6 @@ describe('Trigger: Cascade Cleanup', function() {
   this.timeout(30000);
 
   before(async function() {
-    await db.migrate();
     await db.truncateAllData();
   });
 

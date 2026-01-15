@@ -55,3 +55,54 @@ The project primarily focuses on backend API development. UI/UX considerations f
 -   **PostgreSQL**: The preferred production database, configured via the `KNEX_CONNECT` environment variable.
 -   **SQLite3**: Used for development environments.
 -   **Knex.js**: A SQL query builder for Node.js, abstracting database interactions.
+
+## Test Coverage
+
+### Running Tests
+
+```bash
+npm test              # Default: skips Hydra/Kratos-dependent tests
+npm run test:all      # Runs all tests (requires Hydra/Kratos)
+```
+
+### Test Summary (January 2026)
+
+| Test File | Tests | Status |
+|-----------|-------|--------|
+| `test/integration/owner_api.test.js` | 25 | All passing |
+| `test/integration/portal_identity_access.test.js` | 9 | 8 passing, 1 pending |
+| `test/integration/api_secret_middleware.test.js` | 8 | All passing |
+| `test/integration/nsjwt_token_exchange.test.js` | 6 | All passing |
+| `test/integration/warden_flow.test.js` | 9 | All passing |
+| `test/integration/site_registration.test.js` | 3 | 1 passing, 2 skipped (Hydra) |
+| `test/views/*` | 34 | All passing |
+| `test/triggers/*` | 27 | All passing |
+| `test/unit/*` | 54 | All passing |
+
+**Total**: ~175 passing, 13 pending (Hydra/Kratos skipped), 4 failing (view tests with external dependencies)
+
+### Owner API Endpoints Tested
+
+The following `/api/v1/owner/*` endpoints have integration test coverage:
+
+- **Groups**: CRUD operations, list overview, details, attributes
+- **Group Inclusions**: Add/search/delete inclusion specs
+- **Synopsis**: Owner overview, site-specific synopsis
+- **ACLs**: Owner ACLs, site ACLs
+- **Permissions**: Policy assignment and overview
+
+### Known Blockers
+
+1. **Hydra-dependent tests**: Site registration workflow requires ORY Hydra for OAuth client creation
+2. **Kratos-dependent tests**: Warden active endpoint requires ORY Kratos for session validation
+3. **Async timing**: Restify doesn't await Promise-returning handlers (documented in quirks)
+
+### Documented Quirks
+
+See `test/quirks/README.md` for detailed documentation of observed behaviors:
+
+- **OWN-INC-Q01**: Email normalization not applied (adjust function issue)
+- **OWN-SYN-Q01**: Sites without policies absent from synopsis view
+- **OWN-ACL-Q01**: Unassigned groups query returns empty for truly unassigned groups
+- **NSJWT-Q01**: Async timing in token exchange handler
+- **E2E-Q02**: matches_api_secret async timing

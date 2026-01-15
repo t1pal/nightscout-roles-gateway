@@ -324,6 +324,78 @@ if (acl && acl.policy_type == 'nsjwt') {
 
 ---
 
+### OWN-INC-Q01: Email normalization adjust function missing return
+
+**Handler**: `lib/owner/index.js - suggest_generic_inclusion_payload`  
+**Status**: Observed, documented  
+**Description**: The `adjust` function (lines 228-234) is intended to normalize email addresses to lowercase before storing. However, the function modifies `elem.identity_spec` but the `return elem;` statement is commented out:
+
+```javascript
+function adjust (elem) {
+  console.log("ADJUSTING", elem);
+  if (elem.identity_type == 'email') {
+    elem.identity_spec = elem.identity_spec.toLowerCase( );
+  }
+  // return elem;  // <-- commented out
+}
+```
+
+Since `adjust` is called via `_.each()` (not `_.map()`), the lack of return doesn't affect the mutation, BUT the lowercasing IS happening on the input object. Testing shows the actual behavior is that emails are NOT normalized.
+
+**Impact**: 
+- Email identity_specs are stored with original casing
+- Lookups must be case-insensitive or match exact casing
+- Consider enabling normalization if case-insensitive email matching is desired
+
+**Test Coverage**: Test `OWN-INC-Q01` in `test/integration/owner_api.test.js` documents this behavior.
+
+---
+
+### OWN-SYN-Q01: Sites without policies absent from synopsis view
+
+**View**: `site_registration_synopsis`  
+**Status**: By design  
+**Description**: The `site_registration_synopsis` view is built from `site_acls` view, which itself is constructed from `connection_policies`. Sites that have been registered but have no connection_policies assigned will not appear in the synopsis.
+
+**Code Path**:
+```sql
+-- From migrations/20220507231106_site_registration_synopsis.js
+SELECT id, owner_ref, expected_name, 
+       count(distinct(group_id)) as groups_assigned,
+       ...
+FROM site_acls
+GROUP BY id, owner_ref, expected_name
+```
+
+**Impact**:
+- Newly registered sites won't appear in `/api/v1/owner/:owner_ref/synopsis` until at least one policy is created
+- This may be intentional (synopsis shows "configured" sites) but could confuse users
+- Owner dashboard should query `registered_sites` directly to show all sites
+
+**Test Coverage**: Test `OWN-SYN-Q01` in `test/integration/owner_api.test.js` documents this behavior.
+
+---
+
+### OWN-ACL-Q01: Unassigned groups query returns empty for truly unassigned groups
+
+**View**: `owner_group_usage`  
+**Handler**: `lib/owner/index.js - get_groups_unassigned`  
+**Status**: Observed, documented  
+**Description**: The `get_groups_unassigned` handler queries `owner_group_usage` with filter `{ num_sites_used: 0 }`. However, the `owner_group_usage` view is built from `site_groups_with_policies` which requires a `connection_policies` entry to exist.
+
+This creates a logical impossibility:
+- Groups in `owner_group_usage` MUST have at least one policy (to exist in the view)
+- Query filters for `num_sites_used: 0` (groups with no site assignments)
+- Groups that are truly unassigned (no policies at all) never appear in the view
+
+**Impact**:
+- The "available groups" endpoint returns empty when there are actually unassigned groups
+- To find truly unassigned groups, query `group_definitions` directly and LEFT JOIN to `connection_policies`
+
+**Test Coverage**: Test `OWN-ACL-Q01` in `test/integration/owner_api.test.js` documents this behavior.
+
+---
+
 ## Adding New Quirks
 
 Use this template:

@@ -2,6 +2,26 @@
 
 This directory contains test specifications that define the expected behaviors of the Nightscout Roles Gateway. These specifications serve as the source of truth for writing both unit and integration tests.
 
+## Current Status
+
+**Core business logic is now well-tested.** The initial test expansion effort achieved broad coverage across authorization, identity, triggers, and API endpoints.
+
+| Metric | Count |
+|--------|-------|
+| **Tests Passing** | 218 |
+| **Skipped (Hydra)** | 5 (use `SKIP_HYDRA_TESTS=1`) |
+| **Skipped (Kratos)** | 8 (use `SKIP_KRATOS_TESTS=1`) |
+| **Pending** | ~3 (varies by test run) |
+
+**What remains:**
+- Token caching logic (`lib/exchanged.js`) - testable now, high value
+- Kratos identity flow - requires mock server infrastructure
+- BYOD/API inspection - requires network access to upstream instances
+
+*Last updated: January 2026*
+
+---
+
 ## Documents
 
 | Phase | Document | Coverage |
@@ -88,7 +108,7 @@ Location: `test/unit/` and `test/unit/criteria/`
 Test API endpoints with database fixtures:
 - Full warden request flow
 - Invitation acceptance workflow
-- Complete BYOD inspection pipeline
+- Owner and Privy API workflows
 
 ## Running Tests
 
@@ -139,26 +159,56 @@ NODE_ENV=test npm test -- --grep "sync_hashed_api_secret"
 | Kratos identity | IR-* | - | 🔲 Requires mocking |
 | API inspection | BI-*, AI-* | - | 🔲 Requires network |
 
-**Test Totals**: 218 passing, 16 pending/skipped (Hydra: `SKIP_HYDRA_TESTS=1`, Kratos: `SKIP_KRATOS_TESTS=1`)
+---
 
-*Last updated: January 2026*
+## Remaining Coverage Gaps
 
-## Coverage Gaps
+### Priority 1: Token Caching Logic (Testable Now)
 
-The following areas still need test coverage:
+**Module**: `lib/exchanged.js`
 
-### Priority 1: API Endpoints (Owner & Privy)
-- **Owner Management API** (`/api/v1/owner/*`) - ✅ Groups, inclusions, synopsis, ACLs tested (25 tests); site deletion cascade quirks documented
-- **Privy Identity API** (`/api/v1/privy/*`) - ✅ Consent flow tests added (13 tests); edge cases tested (9 tests)
+This is the only high-value area that can be tested without external infrastructure. The token caching layer handles:
+- Cache hit/miss for NSJWT tokens
+- TTL calculation and storage
+- Error handling when cache or upstream fails
 
-### Priority 2: External Service Dependencies
+**Recommended approach**: Unit tests with mocked Keyv cache and axios HTTP client.
+
+**Test cases to cover**:
+- Cache hit returns cached token without upstream call
+- Cache miss triggers upstream fetch and stores result
+- TTL is calculated correctly from `exp - iat`
+- Cache write failure still returns token (graceful degradation)
+- Upstream failure propagates error correctly
+
+### Priority 2: External Service Dependencies (Long-term)
+
+These require mock server infrastructure and are optional for core coverage:
+
 - **Kratos identity flow** (IR-*) - Requires mock Kratos server for `/sessions/whoami`
-- **BYOD/API inspection** (BI-*, AI-*) - Requires network access to upstream Nightscout instances
+- **Hydra OAuth flow** - 5 tests skipped, requires running Hydra instance
 
-### Priority 3: Edge Cases
-- Error handling paths in various handlers
-- Concurrent request handling
-- Token cache invalidation edge cases
+### Priority 3: BYOD/API Inspection (Deferred)
+
+- **Basic inspection** (BI-*) - Requires network access to upstream Nightscout
+- **Authenticated inspection** (AI-*) - Requires network access with valid tokens
+
+These are deferred as they require network mocking infrastructure that doesn't currently exist.
+
+---
+
+## Implicitly Covered Modules
+
+The following modules do **not** need dedicated tests because they are exercised extensively through existing tests:
+
+| Module | Why It's Covered |
+|--------|------------------|
+| `lib/bootevent.js` | Every integration test that starts a server runs the boot sequence |
+| `lib/entities/index.js` | All integration tests creating sites/groups/policies use this entity layer |
+| `lib/storage.js` | All trigger, view, and integration tests exercise the database layer |
+| `lib/synopsis.js` | Tested directly through owner_api integration tests |
+
+---
 
 ## Lessons Learned for Contributors
 
@@ -216,30 +266,56 @@ Each test file should:
 - Truncate tables in `beforeEach()` to isolate tests
 - Rollback and destroy in `after()`
 
+---
+
 ## Discovered Quirks
 
-See `test/quirks/README.md` for documented edge cases and unexpected behaviors observed during testing. Key findings:
+See `test/quirks/README.md` for full details. Quirks are categorized below:
+
+### By Design (Expected Behavior)
 
 | Quirk ID | Summary |
 |----------|---------|
 | SPV-Q01 | Mismatched fill_pattern and segment count uses modulo cycling |
 | SPVA-Q01 | Schedule filtering uses database server time, not client time |
-| UASP-Q01 | COALESCE skips NULL schedule specs (by design) |
-| UASP-Q02 | Multiple active schedules per policy create duplicate ACL entries |
-| SL-Q01 | Unique constraint on expected_name prevents duplicate sites (by design) |
+| UASP-Q01 | COALESCE skips NULL schedule specs (intentional) |
+| SL-Q01 | Unique constraint on expected_name prevents duplicate sites |
+
+### Fixed
+
+| Quirk ID | Summary |
+|----------|---------|
+| MAS-Q01 | `matches_api_secret` handler missing `.catch(next)` - **FIXED** |
+
+### Known Limitations
+
+| Quirk ID | Summary |
+|----------|---------|
 | TRG-SO-Q01 | Sort order trigger not installed (migration bypass) |
 | TRG-HS-Q01 | api_secret column limited to 255 characters |
+| ACL-03-Q01 | undefined vs null for missing ACL entries (consistency concern) |
+| NSJWT-Q01 | Async timing issue in token exchange handler - mitigated in tests, production still affected |
+| UASP-Q02 | Multiple active schedules per policy create duplicate ACL entries |
+
+### External Service Dependencies (Skipped Tests)
+
+| Quirk ID | Summary |
+|----------|---------|
 | INT-SR-Q01 | Site registration tests require ORY Hydra service (skipped via `SKIP_HYDRA_TESTS=1`) |
 | E2E-Q01 | Identity tests (E2E-02, E2E-03) require Kratos mock server for session injection |
 | E2E-Q02 | API-SECRET matching test (E2E-04) has async handler timing issue in restify chain |
 | E2E-Q03 | Portal endpoint (`/warden/v1/portal/:subject/`) bypasses Kratos, enabling identity tests without mocking |
-| MAS-Q01 | `matches_api_secret` handler missing `.catch(next)` - FIXED |
-| ACL-03-Q01 | undefined vs null for missing ACL entries (consistency concern) |
-| NSJWT-Q01 | Async timing issue in token exchange handler - mitigated in tests, production still affected |
+
+### Cascade Gaps (Documented Design Decisions)
+
+| Quirk ID | Summary |
+|----------|---------|
 | OWN-SITE-DEL-Q01 | Site deletion does NOT cascade to connection_policies (no FK constraint) |
 | OWN-SITE-DEL-Q02 | Site deletion does NOT cascade to joined_groups (no FK constraint) |
 | OWN-SITE-DEL-Q03 | Site deletion does NOT cascade to oauth2_credentials (no FK constraint) |
 | OWN-SITE-DEL-Q04 | Group deletion does NOT cascade to connection_policies (trigger only deletes inclusions) |
+
+---
 
 ## Related Documentation
 

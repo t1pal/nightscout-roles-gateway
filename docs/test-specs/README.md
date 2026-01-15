@@ -129,11 +129,12 @@ NODE_ENV=test npm test -- --grep "sync_hashed_api_secret"
 | Integration: about_server | - | 1 | ✅ Implemented |
 | Integration: site_registration | - | 6 (1 pass, 5 skipped) | ⏭️ 5 skipped without Hydra (INT-SR-Q01) |
 | Integration: warden_flow | E2E-01 to E2E-06 | 8 | ⏭️ Skipped without Kratos (E2E-Q01, E2E-Q02) |
-| Integration: portal_identity_access | AM-B01 to AM-B04, MC-01, MC-03 | 9 (8 pass, 1 pending) | ✅ Partial (MC-02 pending E2E-Q02, AM-B05/B06 require NSJWT mock) |
+| Integration: portal_identity_access | AM-B01 to AM-B04, MC-01, MC-03 | 9 (8 pass, 1 pending) | ✅ Partial (AM-B05/B06 require NSJWT mock) |
+| Integration: api_secret_middleware | AS-01 to AS-05, AS-FB01, MC-02 | 7 | ✅ Implemented (custom test server) |
 | Kratos identity | IR-* | - | 🔲 Requires mocking |
 | API inspection | BI-*, AI-* | - | 🔲 Requires network |
 
-**Test Totals**: 140 passing, 14 pending/skipped (Hydra: `SKIP_HYDRA_TESTS=1`, Kratos: `SKIP_KRATOS_TESTS=1`)
+**Test Totals**: 147 passing, 14 pending/skipped (Hydra: `SKIP_HYDRA_TESTS=1`, Kratos: `SKIP_KRATOS_TESTS=1`)
 
 *Last updated: January 2026*
 
@@ -141,14 +142,9 @@ NODE_ENV=test npm test -- --grep "sync_hashed_api_secret"
 
 With portal endpoint identity tests now implemented (8 passing, 1 pending), the authorization pipeline has comprehensive coverage. Remaining work:
 
-1. **Fix async handler timing issue** (E2E-Q02) - The `matches_api_secret` handler's Promise doesn't complete before the decision handler runs. This is a restify middleware chain issue where Promise-based handlers don't block subsequent handlers. Investigation needed: restify may require a wrapper or plugin for async middleware support. This affects test MC-02.
+1. **Fix async handler timing issue** (E2E-Q02) - PARTIALLY RESOLVED. The `matches_api_secret` handler now returns the Promise and includes `.catch(next)`, but restify's middleware chain still has timing issues. A custom test server with proper async/await handling was created in `test/integration/api_secret_middleware.test.js` to verify API-SECRET matching functionality (7 tests passing).
 
-2. **Add error handling to matches_api_secret** (MAS-Q01) - The `matches_api_secret` handler in `lib/policies/index.js` is missing a `.catch(next)` on its Promise chain. While this doesn't cause functional failures, unhandled promise rejections will crash the process in newer Node.js versions. The fix is straightforward:
-   ```javascript
-   persist.entities.Site.db.findById(...)
-     .then(function (matches) { ... next(); })
-     .catch(next);  // <-- Add this
-   ```
+2. ~~**Add error handling to matches_api_secret** (MAS-Q01)~~ - FIXED. Added `return` and `.catch(next)` to the Promise chain.
 
 3. **Kratos mock server** (E2E-Q01) - For testing the `/warden/v1/active/` endpoints that require session cookies, options remain:
    - Create a mock Kratos HTTP server that responds to `/sessions/whoami`

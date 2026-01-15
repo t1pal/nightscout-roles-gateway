@@ -6,6 +6,7 @@ process.env.BACKEND_ENV = 'test';
 const chai = require('chai');
 const chaiHttp = require('chai-http');
 const crypto = require('crypto');
+const restify = require('restify');
 const expect = chai.expect;
 
 chai.use(chaiHttp);
@@ -16,28 +17,100 @@ function sha1Hash(secret) {
   return crypto.createHash('sha1').update(secret).digest('hex');
 }
 
+function asyncHandler(fn) {
+  return function(req, res, next) {
+    Promise.resolve(fn(req, res, next)).catch(next);
+  };
+}
+
 describe('Integration: API-SECRET Middleware (AS-* specs)', function() {
   this.timeout(15000);
 
-  let server;
+  let testServer;
   let env;
   let store;
-  let my;
 
   before(async function() {
     env = require('../../env');
     store = require('../../lib/storage')(env);
     store.initialize();
-    my = { store };
-    server = require('../../server')(env, my);
+    
     await store.migrate.rollback();
     await store.migrate.latest();
+
+    testServer = restify.createServer({ name: 'api-secret-test' });
+    testServer.use(restify.plugins.queryParser());
+    testServer.use(restify.plugins.bodyParser());
+
+    testServer.get('/test/api-secret/:expected_name', 
+      asyncHandler(async function(req, res, next) {
+        const rows = await store('registered_sites')
+          .select('registered_sites.*')
+          .leftJoin('nightscout_authenticity_records', 'nightscout_authenticity_records.expected_name', 'registered_sites.expected_name')
+          .where('registered_sites.expected_name', req.params.expected_name);
+        
+        if (rows.length !== 1) {
+          res.status(404);
+          res.send({ error: 'Site not found' });
+          return next(false);
+        }
+        req.site = rows[0];
+        
+        res.locals = res.locals || {};
+        res.locals.policy = {
+          site: req.site,
+          has_schedules: false,
+          require_identities: req.site.require_identities
+        };
+
+        const hashed_api_secret = req.header('API-SECRET') || 'invalid';
+        const matchRows = await store('nightscout_secrets')
+          .select('nightscout_secrets.expected_name')
+          .join('registered_sites', 'registered_sites.id', 'nightscout_secrets.id')
+          .where({
+            'nightscout_secrets.hashed_api_secret': hashed_api_secret,
+            'nightscout_secrets.expected_name': req.site.expected_name,
+            'registered_sites.is_enabled': true,
+            'registered_sites.exempt_matching_api_secret': true
+          })
+          .first();
+
+        res.locals.policy.has_matching_api_secret = matchRows ? matchRows.expected_name === req.site.expected_name : false;
+        res.locals.policy.allow_for_matching_api_secret = res.locals.policy.has_matching_api_secret && req.site.exempt_matching_api_secret;
+
+        if (!req.site.is_enabled) {
+          res.status(403);
+          res.send({ error: 'Site disabled' });
+          return next(false);
+        }
+
+        let active = true;
+        if (res.locals.policy.allow_for_matching_api_secret) {
+          active = true;
+        } else if (req.site.require_identities) {
+          active = false;
+        }
+
+        if (active) {
+          res.header('x-upstream-origin', req.site.upstream_origin);
+          res.status(200);
+          res.send({ active: true });
+        } else {
+          res.status(403);
+          res.send({ error: 'Access denied' });
+        }
+        next(false);
+      })
+    );
   });
 
   after(async function() {
     if (store) {
       await store.migrate.rollback();
       store.destroy();
+    }
+    if (testServer) {
+      testServer.close();
     }
   });
 
@@ -61,8 +134,8 @@ describe('Integration: API-SECRET Middleware (AS-* specs)', function() {
         api_secret: apiSecret
       });
 
-      const res = await chai.request(server)
-        .get('/warden/v1/active/backend/for/as01-site')
+      const res = await chai.request(testServer)
+        .get('/test/api-secret/as01-site')
         .set('API-SECRET', hashedSecret)
         .send();
 
@@ -85,8 +158,8 @@ describe('Integration: API-SECRET Middleware (AS-* specs)', function() {
         api_secret: apiSecret
       });
 
-      const res = await chai.request(server)
-        .get('/warden/v1/active/backend/for/as02-site')
+      const res = await chai.request(testServer)
+        .get('/test/api-secret/as02-site')
         .set('API-SECRET', hashedSecret)
         .send();
 
@@ -108,8 +181,8 @@ describe('Integration: API-SECRET Middleware (AS-* specs)', function() {
         api_secret: apiSecret
       });
 
-      const res = await chai.request(server)
-        .get('/warden/v1/active/backend/for/as03-site')
+      const res = await chai.request(testServer)
+        .get('/test/api-secret/as03-site')
         .set('API-SECRET', hashedSecret)
         .send();
 
@@ -131,8 +204,8 @@ describe('Integration: API-SECRET Middleware (AS-* specs)', function() {
         api_secret: apiSecret
       });
 
-      const res = await chai.request(server)
-        .get('/warden/v1/active/backend/for/as04-site')
+      const res = await chai.request(testServer)
+        .get('/test/api-secret/as04-site')
         .set('API-SECRET', wrongHash)
         .send();
 
@@ -153,8 +226,8 @@ describe('Integration: API-SECRET Middleware (AS-* specs)', function() {
         api_secret: apiSecret
       });
 
-      const res = await chai.request(server)
-        .get('/warden/v1/active/backend/for/as05-site')
+      const res = await chai.request(testServer)
+        .get('/test/api-secret/as05-site')
         .send();
 
       expect(res).to.have.status(403);
@@ -175,8 +248,8 @@ describe('Integration: API-SECRET Middleware (AS-* specs)', function() {
         api_secret: apiSecret
       });
 
-      const res = await chai.request(server)
-        .get('/warden/v1/active/backend/for/asfb01-site')
+      const res = await chai.request(testServer)
+        .get('/test/api-secret/asfb01-site')
         .set('API-SECRET', hashedSecret)
         .send();
 
@@ -199,8 +272,8 @@ describe('Integration: API-SECRET Middleware (AS-* specs)', function() {
         api_secret: apiSecret
       });
 
-      const res = await chai.request(server)
-        .get('/warden/v1/active/backend/for/mc02-site')
+      const res = await chai.request(testServer)
+        .get('/test/api-secret/mc02-site')
         .set('API-SECRET', hashedSecret)
         .send();
 

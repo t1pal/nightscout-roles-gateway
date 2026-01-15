@@ -132,32 +132,86 @@ NODE_ENV=test npm test -- --grep "sync_hashed_api_secret"
 | Integration: warden_flow | E2E-01 to E2E-06 | 8 | ⏭️ Skipped without Kratos (E2E-Q01, E2E-Q02) |
 | Integration: portal_identity_access | AM-B01 to AM-B04, ACL-02, MC-01, MC-03 | 11 (10 pass, 1 pending) | ✅ Implemented |
 | Integration: api_secret_middleware | AS-01 to AS-05, AS-FB01, MC-02 | 7 | ✅ Implemented (custom test server) |
-| Integration: nsjwt_token_exchange | AM-B05, AM-B06 | 4 (0 pass, 4 pending) | ⏭️ Pending (NSJWT-Q01: async timing issue) |
+| Integration: nsjwt_token_exchange | AM-B05, AM-B06 | 6 | ✅ Implemented (custom test server) |
 | Kratos identity | IR-* | - | 🔲 Requires mocking |
 | API inspection | BI-*, AI-* | - | 🔲 Requires network |
 
-**Test Totals**: 158+ passing, 18 pending/skipped (Hydra: `SKIP_HYDRA_TESTS=1`, Kratos: `SKIP_KRATOS_TESTS=1`)
+**Test Totals**: 164+ passing, 14 pending/skipped (Hydra: `SKIP_HYDRA_TESTS=1`, Kratos: `SKIP_KRATOS_TESTS=1`)
 
 *Last updated: January 2026*
 
-## Next Steps for Contributors
+## Coverage Gaps
 
-With portal endpoint identity tests and ACL lookup tests now implemented (158+ passing, 18 pending/skipped), the authorization pipeline has comprehensive coverage. Remaining work:
+The following areas still need test coverage:
 
-1. **Fix async handler timing issue** (E2E-Q02, NSJWT-Q01) - PARTIALLY RESOLVED. The `matches_api_secret` and `exchange_acl_token` handlers both return Promises, but restify's middleware chain does not await them before proceeding to subsequent handlers. Custom test servers with proper async/await handling work around this in tests:
-   - `test/integration/api_secret_middleware.test.js` - 7 tests passing for API-SECRET matching
-   - `test/integration/nsjwt_token_exchange.test.js` - 4 tests written but pending due to timing issue
+### Priority 1: API Endpoints (Owner & Privy)
+- **Owner Management API** (`/api/v1/owner/*`) - Site registration, group management, policy CRUD
+- **Privy Identity API** (`/api/v1/privy/*`) - Invitation handling, consent flows
 
-2. ~~**Add error handling to matches_api_secret** (MAS-Q01)~~ - FIXED. Added `return` and `.catch(next)` to the Promise chain.
+### Priority 2: External Service Dependencies
+- **Kratos identity flow** (IR-*) - Requires mock Kratos server for `/sessions/whoami`
+- **BYOD/API inspection** (BI-*, AI-*) - Requires network access to upstream Nightscout instances
 
-3. **Kratos mock server** (E2E-Q01) - For testing the `/warden/v1/active/` endpoints that require session cookies, options remain:
-   - Create a mock Kratos HTTP server that responds to `/sessions/whoami`
-   - Use dependency injection to replace the Kratos SDK in test mode
-   - **Note**: Most identity tests are now covered via the portal endpoint (see portal_identity_access.test.js)
+### Priority 3: Edge Cases
+- Error handling paths in various handlers
+- Concurrent request handling
+- Token cache invalidation edge cases
 
-4. ~~**ACL lookup tests** (ACL-01 to ACL-04)~~ - IMPLEMENTED. 11 unit tests covering `get_acls` and `get_acl_by_identity_param` handlers. Discovered quirk ACL-03-Q01 (undefined vs null for missing ACLs).
+## Lessons Learned for Contributors
 
-5. ~~**NSJWT policy tests** (AM-B05, AM-B06)~~ - IMPLEMENTED but PENDING. Tests demonstrate intended behavior with mock upstream server, but are skipped due to NSJWT-Q01 (async timing issue same as E2E-Q02).
+### 1. Restify Async Handler Pattern (CRITICAL)
+Restify's middleware chain does **not** await Promises. If your handler returns a Promise, subsequent handlers run before it resolves.
+
+**Problem pattern (breaks in Restify):**
+```javascript
+function myHandler(req, res, next) {
+  return asyncOperation().then(result => {
+    res.locals.data = result;  // Set AFTER next handler runs!
+    next();
+  });
+}
+```
+
+**Solution - Use asyncHandler wrapper in tests:**
+```javascript
+function asyncHandler(fn) {
+  return function(req, res, next) {
+    Promise.resolve(fn(req, res, next)).catch(next);
+  };
+}
+
+// Then use async/await inline:
+testServer.get('/path', asyncHandler(async function(req, res, next) {
+  res.locals.data = await asyncOperation();  // Properly awaited
+  // ... rest of handler
+}));
+```
+
+See `test/integration/api_secret_middleware.test.js` and `test/integration/nsjwt_token_exchange.test.js` for working examples.
+
+### 2. Portal Endpoint Bypass (E2E-Q03)
+The `/warden/v1/portal/:subject/` endpoint accepts subject as a URL parameter, bypassing Kratos session lookup. Use this to test identity-based access control without mocking Kratos.
+
+### 3. Mock Upstream Server Pattern
+For testing handlers that make HTTP calls to upstream Nightscout instances (e.g., NSJWT token exchange), create a mock HTTP server:
+```javascript
+const mockServer = http.createServer((req, res) => {
+  if (req.url.startsWith('/api/v2/authorization/request/')) {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ token: 'mock-token', iat: now, exp: now + 3600 }));
+  }
+});
+mockServer.listen(0, '127.0.0.1', () => { /* dynamic port */ });
+```
+
+### 4. Fixtures Pattern
+Use `test/setup/fixtures.js` for creating test data. It handles ID generation and provides consistent helpers for sites, groups, policies, etc.
+
+### 5. Database Isolation
+Each test file should:
+- Run `store.migrate.rollback()` and `store.migrate.latest()` in `before()`
+- Truncate tables in `beforeEach()` to isolate tests
+- Rollback and destroy in `after()`
 
 ## Discovered Quirks
 
@@ -178,7 +232,7 @@ See `test/quirks/README.md` for documented edge cases and unexpected behaviors o
 | E2E-Q03 | Portal endpoint (`/warden/v1/portal/:subject/`) bypasses Kratos, enabling identity tests without mocking |
 | MAS-Q01 | `matches_api_secret` handler missing `.catch(next)` - FIXED |
 | ACL-03-Q01 | undefined vs null for missing ACL entries (consistency concern) |
-| NSJWT-Q01 | Async timing issue in token exchange handler (same root cause as E2E-Q02) |
+| NSJWT-Q01 | Async timing issue in token exchange handler - mitigated in tests, production still affected |
 
 ## Related Documentation
 

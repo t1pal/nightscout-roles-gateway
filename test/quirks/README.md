@@ -270,7 +270,7 @@ return persist.entities.Site.db.findById(...)
 ### NSJWT-Q01: Async Timing Issue in Token Exchange Handler
 
 **Handler**: `lib/exchanged.js - exchange_acl_token`  
-**Status**: Observed, same root cause as E2E-Q02  
+**Status**: Mitigated in tests (production middleware still affected)  
 **Description**: The `exchange_acl_token` handler returns a Promise that makes an HTTP request to the upstream Nightscout server to exchange for a JWT token. However, restify's middleware chain does not await Promises before proceeding to the next handler.
 
 **Impact**:
@@ -294,9 +294,15 @@ if (acl && acl.policy_type == 'nsjwt') {
 2. Implement an async middleware wrapper for restify in production code
 
 **Test Coverage**:
-- Tests are written in `test/integration/nsjwt_token_exchange.test.js` but marked as pending
-- Mock upstream server proves the token exchange logic works correctly
-- The timing issue prevents end-to-end validation via the normal portal route
+- Tests in `test/integration/nsjwt_token_exchange.test.js` use a custom test server with proper async handling (6 tests passing)
+- Mock upstream server simulates token exchange with Nightscout instances
+- Custom test server replicates the handler logic with proper await semantics
+- **Important**: These tests validate the intended behavior, not the production middleware chain. The production `exchange_acl_token` handler still has the async timing issue.
+
+**Production Fix**: To fix in production, either:
+1. Wrap `exchange_acl_token` with an asyncHandler middleware in `lib/routes.js`
+2. Convert the handler to use callbacks instead of Promises
+3. Use a restify plugin that properly awaits Promise-returning handlers
 
 ---
 

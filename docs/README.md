@@ -5,6 +5,7 @@ This directory contains the API documentation for the Nightscout Roles Gateway (
 ## Files
 
 - `openapi.yaml` - OpenAPI 3.0 specification for the REST API
+- `USE-CASES-MATRIX.md` - Comprehensive matrix of data rights scenarios across the diabetes care lifecycle
 - `access-modes.md` - Documentation of the three orthogonal access conditions
 - `criteria-system.md` - BYOD Nightscout validation pipeline and security
 - `oauth-client-lifecycle.md` - OAuth client management, invitation/RSVP flow, and Hydra integration

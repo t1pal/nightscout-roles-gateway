@@ -75,11 +75,14 @@ npm run test:all      # Runs all tests (requires Hydra/Kratos)
 | `test/integration/nsjwt_token_exchange.test.js` | 6 | All passing |
 | `test/integration/warden_flow.test.js` | 9 | All pending (Kratos) |
 | `test/integration/site_registration.test.js` | 3 | 1 passing, 2 skipped (Hydra) |
+| `test/integration/privy_consent_flow.test.js` | 13 | All passing |
+| `test/integration/owner_site_deletion.test.js` | 7 | All passing |
+| `test/integration/privy_edge_cases.test.js` | 9 | All passing |
 | `test/views/*` | 34 | All passing |
 | `test/triggers/*` | 29 | All passing |
 | `test/unit/*` | 77 | All passing |
 
-**Total**: 189 passing, 16 pending (Hydra/Kratos skipped, TRG-CC-01/02 skipped), 0 failing
+**Total**: 218 passing, 16 pending (Hydra/Kratos skipped, TRG-CC-01/02 skipped), 0 failing
 
 ### Test Infrastructure
 
@@ -114,3 +117,7 @@ See `test/quirks/README.md` for detailed documentation of observed behaviors:
 - **NSJWT-Q01**: Async timing in token exchange handler
 - **E2E-Q02**: matches_api_secret async timing
 - **TRG-CC-Q01**: remove_joined_groups_via_policy trigger behavior in test environment (trigger works in direct SQL verification)
+- **OWN-SITE-DEL-Q01**: Site deletion does NOT cascade to connection_policies
+- **OWN-SITE-DEL-Q02**: Site deletion does NOT cascade to joined_groups
+- **OWN-SITE-DEL-Q03**: Site deletion does NOT cascade to oauth2_credentials
+- **OWN-SITE-DEL-Q04**: Group deletion does NOT cascade to connection_policies

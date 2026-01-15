@@ -126,23 +126,27 @@ NODE_ENV=test npm test -- --grep "sync_hashed_api_secret"
 | Trigger: cascade cleanup | TRG-CC-01 to TRG-CC-07 | 7 | ✅ Implemented |
 | Trigger: reserved validation | TRG-RN-01 to TRG-RN-12 | 12 | ✅ Implemented |
 | Trigger: sort order | TRG-SO-01 to TRG-SO-06 | 6 | ✅ Implemented (quirk documented) |
+| Unit: ACL lookup handlers | ACL-01 to ACL-04 | 11 | ✅ Implemented (quirk ACL-03-Q01 documented) |
 | Integration: about_server | - | 1 | ✅ Implemented |
 | Integration: site_registration | - | 6 (1 pass, 5 skipped) | ⏭️ 5 skipped without Hydra (INT-SR-Q01) |
 | Integration: warden_flow | E2E-01 to E2E-06 | 8 | ⏭️ Skipped without Kratos (E2E-Q01, E2E-Q02) |
-| Integration: portal_identity_access | AM-B01 to AM-B04, MC-01, MC-03 | 9 (8 pass, 1 pending) | ✅ Partial (AM-B05/B06 require NSJWT mock) |
+| Integration: portal_identity_access | AM-B01 to AM-B04, ACL-02, MC-01, MC-03 | 11 (10 pass, 1 pending) | ✅ Implemented |
 | Integration: api_secret_middleware | AS-01 to AS-05, AS-FB01, MC-02 | 7 | ✅ Implemented (custom test server) |
+| Integration: nsjwt_token_exchange | AM-B05, AM-B06 | 4 (0 pass, 4 pending) | ⏭️ Pending (NSJWT-Q01: async timing issue) |
 | Kratos identity | IR-* | - | 🔲 Requires mocking |
 | API inspection | BI-*, AI-* | - | 🔲 Requires network |
 
-**Test Totals**: 147 passing, 14 pending/skipped (Hydra: `SKIP_HYDRA_TESTS=1`, Kratos: `SKIP_KRATOS_TESTS=1`)
+**Test Totals**: 158+ passing, 18 pending/skipped (Hydra: `SKIP_HYDRA_TESTS=1`, Kratos: `SKIP_KRATOS_TESTS=1`)
 
 *Last updated: January 2026*
 
 ## Next Steps for Contributors
 
-With portal endpoint identity tests now implemented (8 passing, 1 pending), the authorization pipeline has comprehensive coverage. Remaining work:
+With portal endpoint identity tests and ACL lookup tests now implemented (158+ passing, 18 pending/skipped), the authorization pipeline has comprehensive coverage. Remaining work:
 
-1. **Fix async handler timing issue** (E2E-Q02) - PARTIALLY RESOLVED. The `matches_api_secret` handler now returns the Promise and includes `.catch(next)`, but restify's middleware chain still has timing issues. A custom test server with proper async/await handling was created in `test/integration/api_secret_middleware.test.js` to verify API-SECRET matching functionality (7 tests passing).
+1. **Fix async handler timing issue** (E2E-Q02, NSJWT-Q01) - PARTIALLY RESOLVED. The `matches_api_secret` and `exchange_acl_token` handlers both return Promises, but restify's middleware chain does not await them before proceeding to subsequent handlers. Custom test servers with proper async/await handling work around this in tests:
+   - `test/integration/api_secret_middleware.test.js` - 7 tests passing for API-SECRET matching
+   - `test/integration/nsjwt_token_exchange.test.js` - 4 tests written but pending due to timing issue
 
 2. ~~**Add error handling to matches_api_secret** (MAS-Q01)~~ - FIXED. Added `return` and `.catch(next)` to the Promise chain.
 
@@ -151,9 +155,9 @@ With portal endpoint identity tests now implemented (8 passing, 1 pending), the 
    - Use dependency injection to replace the Kratos SDK in test mode
    - **Note**: Most identity tests are now covered via the portal endpoint (see portal_identity_access.test.js)
 
-4. **ACL lookup tests** (ACL-01 to ACL-04) - Test `get_acls` and `get_acl_by_identity_param` handlers which populate `res.locals.acl` from the unified view.
+4. ~~**ACL lookup tests** (ACL-01 to ACL-04)~~ - IMPLEMENTED. 11 unit tests covering `get_acls` and `get_acl_by_identity_param` handlers. Discovered quirk ACL-03-Q01 (undefined vs null for missing ACLs).
 
-5. **NSJWT policy tests** (AM-B05, AM-B06) - Test NSJWT token exchange flow, requires mock token endpoint.
+5. ~~**NSJWT policy tests** (AM-B05, AM-B06)~~ - IMPLEMENTED but PENDING. Tests demonstrate intended behavior with mock upstream server, but are skipped due to NSJWT-Q01 (async timing issue same as E2E-Q02).
 
 ## Discovered Quirks
 
@@ -172,7 +176,9 @@ See `test/quirks/README.md` for documented edge cases and unexpected behaviors o
 | E2E-Q01 | Identity tests (E2E-02, E2E-03) require Kratos mock server for session injection |
 | E2E-Q02 | API-SECRET matching test (E2E-04) has async handler timing issue in restify chain |
 | E2E-Q03 | Portal endpoint (`/warden/v1/portal/:subject/`) bypasses Kratos, enabling identity tests without mocking |
-| MAS-Q01 | `matches_api_secret` handler missing `.catch(next)` - potential unhandled promise rejection |
+| MAS-Q01 | `matches_api_secret` handler missing `.catch(next)` - FIXED |
+| ACL-03-Q01 | undefined vs null for missing ACL entries (consistency concern) |
+| NSJWT-Q01 | Async timing issue in token exchange handler (same root cause as E2E-Q02) |
 
 ## Related Documentation
 

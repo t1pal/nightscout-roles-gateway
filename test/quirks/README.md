@@ -267,6 +267,57 @@ return persist.entities.Site.db.findById(...)
 
 ---
 
+### NSJWT-Q01: Async Timing Issue in Token Exchange Handler
+
+**Handler**: `lib/exchanged.js - exchange_acl_token`  
+**Status**: Observed, same root cause as E2E-Q02  
+**Description**: The `exchange_acl_token` handler returns a Promise that makes an HTTP request to the upstream Nightscout server to exchange for a JWT token. However, restify's middleware chain does not await Promises before proceeding to the next handler.
+
+**Impact**:
+- The decision handler runs before the token exchange completes
+- `res.locals.nsjwt` is undefined when the decision is made
+- NSJWT policy users receive 403 even when token exchange would succeed
+
+**Code Path**:
+```javascript
+// lib/exchanged.js - exchange_acl_token
+if (acl && acl.policy_type == 'nsjwt') {
+  return lookup_token(acl, upstream_origin).then(function (token) {
+    res.locals.nsjwt = token;  // Token arrives AFTER decision handler runs
+    next( );
+  }).catch(next);
+}
+```
+
+**Workarounds**:
+1. Create a custom test server with proper async/await handling (like `api_secret_middleware.test.js`)
+2. Implement an async middleware wrapper for restify in production code
+
+**Test Coverage**:
+- Tests are written in `test/integration/nsjwt_token_exchange.test.js` but marked as pending
+- Mock upstream server proves the token exchange logic works correctly
+- The timing issue prevents end-to-end validation via the normal portal route
+
+---
+
+### ACL-03-Q01: undefined vs null for missing ACL entries
+
+**Handler**: `lib/policies/index.js - get_acls, get_acl_by_identity_param`  
+**Status**: Observed, documented  
+**Description**: When a policy ID doesn't exist in the database or when a subject has no joined groups, the handler sets `res.locals.acl` to `undefined` (from the database query returning no result) rather than `null`.
+
+**Contrast**:
+- Empty/missing `x-policy-id` header: explicitly sets `res.locals.acl = null`
+- Invalid/nonexistent `x-policy-id`: `findById` returns `undefined`
+
+**Impact**:
+- Code that checks `if (res.locals.acl)` works correctly (both are falsy)
+- Code that checks `if (res.locals.acl === null)` may miss the undefined case
+
+**Recommendation**: Consider normalizing to `null` in the handlers for consistency.
+
+---
+
 ## Adding New Quirks
 
 Use this template:

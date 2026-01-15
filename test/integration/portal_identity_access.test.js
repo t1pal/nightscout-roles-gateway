@@ -380,4 +380,110 @@ describe('Integration: Portal Endpoint Identity Access (E2E-Q03)', function() {
       expect(res).to.not.have.header('x-upstream-origin');
     });
   });
+
+  describe('ACL-02: Schedule override via portal endpoint', function() {
+    it('should use schedule-overridden policy_spec when schedule is active', async function() {
+      const ownerRef = 'owner-acl02-portal';
+      const testSubject = 'test-subject-acl02-portal';
+      
+      const site = await fixtures.createSite(store, {
+        expected_name: 'schedule-site-portal',
+        upstream_origin: 'https://schedule-ns.example.com',
+        owner_ref: ownerRef,
+        is_enabled: true,
+        require_identities: true
+      });
+
+      const group = await fixtures.createGroup(store, {
+        owner_ref: ownerRef,
+        nickname: 'Scheduled Access Group'
+      });
+
+      const spec = await fixtures.createInclusionSpec(store, {
+        group_definition_id: group.id,
+        identity_type: 'email',
+        identity_spec: 'scheduled@example.com'
+      });
+
+      const policy = await fixtures.createPolicy(store, {
+        site_id: site.id,
+        group_definition_id: group.id,
+        policy_type: 'default',
+        policy_spec: 'deny'
+      });
+
+      await fixtures.createSchedule(store, {
+        policy_id: policy.id,
+        fill_pattern: 'allow',
+        schedule_segments: '0'
+      });
+
+      await fixtures.createJoinedGroup(store, {
+        subject: testSubject,
+        expected_name: site.expected_name,
+        group_id: group.id,
+        group_spec_id: spec.id,
+        policy_id: policy.id
+      });
+
+      const res = await chai.request(server)
+        .get(`/warden/v1/portal/${testSubject}/backend/for/schedule-site-portal`)
+        .send();
+
+      expect(res).to.have.status(200);
+      expect(res).to.have.header('x-upstream-origin', 'https://schedule-ns.example.com');
+    });
+
+    it('should use base policy_spec when schedule is not active', async function() {
+      const ownerRef = 'owner-acl02-inactive';
+      const testSubject = 'test-subject-acl02-inactive';
+      
+      const site = await fixtures.createSite(store, {
+        expected_name: 'inactive-schedule-site',
+        upstream_origin: 'https://inactive-ns.example.com',
+        owner_ref: ownerRef,
+        is_enabled: true,
+        require_identities: true
+      });
+
+      const group = await fixtures.createGroup(store, {
+        owner_ref: ownerRef,
+        nickname: 'Inactive Schedule Group'
+      });
+
+      const spec = await fixtures.createInclusionSpec(store, {
+        group_definition_id: group.id,
+        identity_type: 'email',
+        identity_spec: 'inactive@example.com'
+      });
+
+      const policy = await fixtures.createPolicy(store, {
+        site_id: site.id,
+        group_definition_id: group.id,
+        policy_type: 'default',
+        policy_spec: 'deny'
+      });
+
+      await fixtures.createSchedule(store, {
+        policy_id: policy.id,
+        fill_pattern: 'allow',
+        schedule_segments: '999999999'
+      });
+
+      await fixtures.createJoinedGroup(store, {
+        subject: testSubject,
+        expected_name: site.expected_name,
+        group_id: group.id,
+        group_spec_id: spec.id,
+        policy_id: policy.id
+      });
+
+      const res = await chai.request(server)
+        .get(`/warden/v1/portal/${testSubject}/backend/for/inactive-schedule-site`)
+        .send();
+
+      expect(res).to.have.status(403);
+      expect(res).to.not.have.header('x-upstream-origin');
+    });
+  });
 });

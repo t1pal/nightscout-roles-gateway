@@ -424,6 +424,88 @@ SELECT * FROM joined_groups WHERE policy_id = 'test-policy-id';
 
 ---
 
+### OWN-SITE-DEL-Q01: Site deletion does NOT cascade to policies
+
+**Table**: `connection_policies`  
+**Status**: Observed, documented  
+**Description**: When a `registered_sites` record is deleted, associated `connection_policies` records are NOT automatically deleted. There is no foreign key constraint or trigger to cascade the delete from `registered_sites.id` to `connection_policies.site_id`.
+
+**Impact**:
+- Orphaned policies remain in the database after site deletion
+- Application logic must explicitly delete policies before deleting sites
+- Or: Policies should be deleted first to trigger proper downstream cascades
+
+**Test Coverage**: Test `OWN-SITE-DEL-Q01` in `test/integration/owner_site_deletion.test.js`
+
+---
+
+### OWN-SITE-DEL-Q02: Site deletion does NOT cascade to joined_groups
+
+**Table**: `joined_groups`  
+**Status**: Observed, documented  
+**Description**: When a `registered_sites` record is deleted, associated `joined_groups` records (which reference `expected_name`) are NOT automatically deleted. There is no foreign key constraint on `joined_groups.expected_name`.
+
+**Impact**:
+- Orphaned consent records remain in the database
+- User consent data may reference deleted sites
+- Application logic must handle cleanup explicitly
+
+**Test Coverage**: Test `OWN-SITE-DEL-Q02` in `test/integration/owner_site_deletion.test.js`
+
+---
+
+### OWN-SITE-DEL-Q03: Site deletion does NOT cascade to oauth2_credentials
+
+**Table**: `oauth2_credentials`  
+**Status**: Observed, documented  
+**Description**: When a `registered_sites` record is deleted, associated `oauth2_credentials` records (which reference `expected_name`) are NOT automatically deleted.
+
+**Impact**:
+- Orphaned OAuth credentials remain in the database
+- May cause issues if site with same expected_name is re-registered
+- Consider adding explicit cleanup or foreign key constraint
+
+**Test Coverage**: Test `OWN-SITE-DEL-Q03` in `test/integration/owner_site_deletion.test.js`
+
+---
+
+### OWN-SITE-DEL-Q04: Group deletion does NOT cascade to policies
+
+**Table**: `connection_policies`  
+**Status**: Observed, documented  
+**Description**: When a `group_definitions` record is deleted, the trigger `delete_group_policy` only deletes `group_inclusion_specs`, NOT `connection_policies`. This leaves orphaned policies with invalid `group_definition_id` references.
+
+**Impact**:
+- Orphaned policies reference non-existent groups
+- Views that join on `group_definition_id` may have unexpected behavior
+- Application should delete policies before deleting groups
+
+**Test Coverage**: Test `OWN-SITE-DEL-Q04` in `test/integration/owner_site_deletion.test.js`
+
+---
+
+### CASCADE-SUMMARY: Overall cascade behavior documentation
+
+**Status**: Documented  
+**Description**: Summary of what DOES and DOES NOT cascade in the system.
+
+**Working cascades (via triggers)**:
+- `group_definitions` DELETE → `group_inclusion_specs` (trigger: delete_group_policy)
+- `connection_policies` DELETE → `scheduled_policies` (trigger: delete_connection_policy)
+- `connection_policies` DELETE → `joined_groups` (trigger: delete_connection_policy_triggers_group_quits)
+
+**Missing cascades (leaves orphaned data)**:
+- `registered_sites` DELETE → `connection_policies` (Q01)
+- `registered_sites` DELETE → `joined_groups` (Q02)
+- `registered_sites` DELETE → `oauth2_credentials` (Q03)
+- `group_definitions` DELETE → `connection_policies` (Q04)
+
+**Recommendation**: Site deletion should be performed via application logic that explicitly deletes policies first to trigger proper downstream cascades.
+
+**Test Coverage**: See `test/integration/owner_site_deletion.test.js`
+
+---
+
 ## Adding New Quirks
 
 Use this template:

@@ -39,6 +39,16 @@ The project primarily focuses on backend API development. UI/UX considerations f
 -   **Owner Management API**: Endpoints for registering Nightscout sites, managing user groups, and creating connection policies (`/api/v1/owner/*`).
 -   **Privy (Identity API)**: Endpoints for handling user invitations and consent (`/api/v1/privy/*`).
 
+### Use Cases Documentation
+
+The project maintains a comprehensive use case matrix at `docs/USE-CASES-MATRIX.md` covering:
+-   **Care Lifecycle Stages**: Pediatric, teen, adult independent, adult with variable support, elder care
+-   **Context Environments**: Home, school, workplace, healthcare clinical, social events, emergency
+-   **Actor Relationships**: Self, family, professional caregivers, healthcare providers, automated agents, transient helpers
+-   **Temporal Patterns**: Always-on, scheduled recurring, event-based, on-demand with boundaries, emergency override
+
+This matrix maps use case scenarios to NRG components and tracks implementation status.
+
 ### System Design Choices
 
 -   **Database Schema**: Core tables include `registered_sites`, `group_definitions`, `connection_policies`, and `scheduled_policies`.

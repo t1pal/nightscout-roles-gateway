@@ -30,6 +30,8 @@ The README lists several example use cases. Here's how they map to this matrix:
 | The special guest | Transient Helpers | 3.6, 4.3 |
 | Organizational roles | Healthcare Provider Documentation | 3.4, 5.3 |
 | BYOD Ownership | Automated Agents | 3.5 |
+| *Camp coordination* | Diabetes Camp Week | 5.6 |
+| *Elder care integration* | Nursing Home CGM | 5.7 |
 
 ---
 
@@ -44,6 +46,28 @@ Diabetes data rights exist on a spectrum—from complete personal sovereignty to
 
 Each dimension intersects to create specific scenarios that require different configurations of NRG's access control capabilities.
 
+### The Adoption Gap: Pediatric Success vs. Elder Care Potential
+
+Technology adoption in diabetes data sharing varies dramatically across the lifecycle:
+
+**High Adoption: Pediatric & Camp Settings**
+- Diabetes summer camps report campers as young as six years old arriving with smartphones and CGMs
+- Parents optimistically uploading data to camp view dashboards
+- Established workflows, volunteer training, and dashboard infrastructure
+- Decades of community experience in coordinated care
+
+**Low Adoption: Elder Care & Professional Managed Care**
+- Few nursing homes or assisted living facilities integrate CGM data into managed care
+- Professional caregivers rarely have streamlined access to residents' glucose data
+- Workflow friction prevents adoption even when technology exists
+- People with diabetes are aging longer thanks to technology—but care systems haven't kept pace
+
+**Why This Matters for NRG:**
+
+Professional enablement features—like policy templates, bulk invitations, and streamlined onboarding—can unlock CGM monitoring in underserved settings. The goal isn't to shift power away from the person with diabetes, but to reduce friction so professional caregivers *actually use* the data. When a nursing home can efficiently integrate CGM visibility into their care workflow, the resident benefits from informed, responsive care.
+
+The camp model shows what's possible. NRG should enable similar adoption in elder care, workplace health programs, and clinical settings—always with the person with diabetes (or their designated advocate) retaining control over who gets access.
+
 ---
 
 ## Table of Contents
@@ -54,6 +78,8 @@ Each dimension intersects to create specific scenarios that require different co
 4. [Dimension 4: Temporal Patterns](#dimension-4-temporal-patterns)
 5. [Use Case Scenarios](#use-case-scenarios)
 6. [Component Capability Matrix](#component-capability-matrix)
+   - [Owner Convenience Components](#owner-convenience-components)
+   - [Professional Enablement Components](#professional-enablement-components)
 7. [Implementation Status](#implementation-status)
 
 ---
@@ -699,6 +725,154 @@ Policy: "Race Day Public"
 
 ---
 
+### Scenario 5.6: Diabetes Camp Week
+
+**Persona:** Camp nurse managing 40 campers with T1D for one week
+
+**Context:** High-adoption setting with established workflows. Campers arrive with CGMs uploading to camp dashboard. Parents expect coordinated care.
+
+**Actors:**
+- Campers (ages 6-17, varying autonomy)
+- Parents (owners, granting access for camp week)
+- Camp nurse (primary medical oversight)
+- Cabin counselors (awareness, basic response)
+- Camp director (administrative oversight)
+
+**Configuration (Bulk Invitation Flow):**
+
+```
+[Camp Setup - Before Camp Week]
+
+Camp Nurse:
+  1. Creates camp session: "Camp Wellness July 15-22"
+  2. Defines access template:
+     - Schedule: July 15 8am - July 22 6pm
+     - Permissions: Medical staff = careportal, Counselors = read-only
+  3. Sends bulk invitation to registered families
+
+Each Parent (Owner):
+  1. Receives: "Camp Wellness requests access for [child] July 15-22"
+  2. Reviews permissions and schedule
+  3. Approves → consent recorded
+  4. Child's site added to camp dashboard
+
+[During Camp Week]
+
+Camp Dashboard shows:
+  - All consenting campers in one view
+  - Color-coded by glucose status
+  - Click-through to individual Nightscout
+  
+Medical Staff:
+  - Full careportal access during camp hours
+  - Can log treatments, notes
+  - Activity logged per camper
+
+Counselors:
+  - Read-only view of assigned cabin
+  - Alerts for urgent lows
+  - No treatment entry capability
+
+[After Camp]
+
+  - Access automatically expires July 22 6pm
+  - Parents receive summary of access activity
+  - No ongoing access retained
+```
+
+**Key Features Used:**
+- Bulk invitations (proposed)
+- One-time schedule windows (proposed)
+- Policy templates (proposed)
+- Professional dashboards (proposed)
+- Activity logging
+
+**Why This Works:**
+- Parents retain control: each approves individually
+- Camp gets efficiency: one setup process, aggregated view
+- Automatic expiration: no lingering access after camp
+- Audit trail: parents can review what happened
+
+---
+
+### Scenario 5.7: Nursing Home CGM Integration
+
+**Persona:** Nursing home with 8 residents using CGM (of 50 total residents)
+
+**Context:** Low-adoption setting. Staff unfamiliar with CGM. Family members want visibility. This is an *aspirational* scenario showing what professional enablement could unlock.
+
+**Actors:**
+- Residents (nominal owners, varying cognitive capacity)
+- Family members (POA/guardians, effective decision-makers)
+- Nursing staff (shift-based care)
+- Facility medical director
+- Primary care physicians (external)
+
+**Current State (Without NRG Professional Features):**
+- Each family independently configures access
+- No consistent setup across residents
+- Staff must check 8 different apps/sites
+- No aggregated view for shift handoffs
+- Low adoption due to workflow friction
+
+**Aspirational State (With Professional Enablement):**
+
+```
+[Facility Onboarding]
+
+Facility Medical Director:
+  1. Creates facility profile in NRG
+  2. Defines standard access template:
+     - Nursing staff: read + basic careportal during shifts
+     - Medical director: always-on oversight
+     - External physicians: scheduled to their office hours
+  3. Invites families to opt in
+
+Each Family (POA/Guardian):
+  1. Receives: "Sunrise Care requests CGM integration for [resident]"
+  2. Reviews: "Nursing staff will have view access during shifts (7am-7pm)"
+  3. Approves (or customizes schedule)
+  4. Resident's data visible on facility dashboard
+
+[Daily Operations]
+
+Nursing Station Dashboard:
+  - Consenting residents in unified view
+  - Shift handoff includes glucose trends
+  - Alerts route to on-duty nurse
+  
+Shift Nurse:
+  - Sees residents assigned to their wing
+  - Can log meal acknowledgments, snack given
+  - Activity logged for family review
+
+Family Member:
+  - Receives weekly summary of access activity
+  - Can revoke or modify access any time
+  - Retains full control as POA
+
+[Benefit to Resident]
+
+  - Staff aware of glucose trends before meals
+  - Faster response to lows during night shifts
+  - Better coordination with external physicians
+  - Family has peace of mind with visibility
+```
+
+**Key Features Needed:**
+- Bulk invitations with family consent
+- Organization identity (facility staff group)
+- Professional dashboards (aggregated view)
+- Shift-based scheduling
+- Activity logging for family oversight
+- Delegated ownership (POA as effective manager)
+
+**Why This Matters:**
+
+Elder care is underserved not because the technology doesn't exist, but because workflow friction prevents adoption. Professional enablement features—designed with patient consent at the center—can unlock CGM monitoring for a population that increasingly needs it.
+
+---
+
 ## Component Capability Matrix
 
 Mapping use case needs to NRG building blocks.
@@ -747,6 +921,64 @@ Mapping use case needs to NRG building blocks.
 | **Multi-Owner Sites** | Shared ownership | 🚧 Proposed | Teen + parent, couples |
 | **Emergency Escalation** | Override normal policies | 🚧 Proposed | Crisis situations |
 
+### Owner Convenience Components
+
+These features help site owners efficiently configure access while maintaining full control.
+
+| Component | Capability | Status | Scenarios |
+|-----------|------------|--------|-----------|
+| **Policy Templates** | Pre-defined policy+schedule combinations owners can apply | 🚧 Proposed | "School Hours", "Weekend Babysitter", "Healthcare Provider" |
+| **Inclusion Templates** | Common identity patterns owners can import | 🚧 Proposed | "My Endocrinology Clinic", "Lincoln Elementary Health Office" |
+| **Quick-Apply Wizards** | Guided setup for common scenarios | 🚧 Proposed | First-time school setup, adding family member |
+
+**How Templates Work (Patient-Centric Model):**
+
+Templates are *convenience tools for owners*, not institution-controlled policies. The flow remains:
+
+1. Owner decides to grant access to a professional (school, clinic, camp)
+2. Owner selects a template that matches the scenario ("School Hours Access")
+3. Template pre-fills schedule, permission level, and suggested group structure
+4. Owner reviews, customizes if needed, and confirms
+5. Owner sends invitation; professional accepts with consent
+
+The professional never defines a policy that spans multiple patient sites. Instead, each owner independently applies a template—ensuring consistent setup without sacrificing control.
+
+### Professional Enablement Components
+
+These features reduce friction for professional caregivers while preserving owner consent.
+
+| Component | Capability | Status | Scenarios |
+|-----------|------------|--------|-----------|
+| **Bulk Invitations** | Professional sends one invitation request to multiple owners | 🚧 Proposed | Camp nurse onboarding 30 campers, clinic adding patients |
+| **Organization Identity** | Match by verified org membership | 🚧 Planned | "Anyone from Lincoln Elementary Health Office" |
+| **Professional Dashboards** | Aggregate view for consented sites | 🚧 Proposed | Camp dashboard, clinic patient list |
+| **Onboarding Workflows** | Streamlined setup for common professional contexts | 🚧 Proposed | Camp registration, clinic enrollment |
+
+**Bulk Management with Owner Consent:**
+
+Professional bulk management is about *efficiency*, not *control*. The pattern:
+
+```
+Professional (e.g., Camp Nurse):
+  1. Creates invitation request for camp week
+  2. Specifies: dates, permission level, schedule
+  3. Sends bulk invitation to registered camper families
+
+Each Owner (Parent):
+  1. Receives invitation: "Camp Wellness requests view access July 15-22"
+  2. Reviews terms, schedule, and permissions
+  3. Approves (or customizes, or declines)
+  4. Consent recorded; access granted for approved window
+
+Result:
+  - Nurse has aggregated dashboard of consenting campers
+  - Each owner explicitly approved their child's inclusion
+  - Access automatically expires at camp end
+  - Activity logged for accountability
+```
+
+This model scales to elder care facilities, school health offices, and clinical practices—enabling professional adoption while maintaining the patient-centric consent model.
+
 ---
 
 ## Implementation Status
@@ -773,14 +1005,20 @@ Mapping use case needs to NRG building blocks.
 | Organization matching | Only email matching now | Implement organization identity type |
 | Emergency override | No escalation model | Emergency group + elevated access |
 | Teen co-ownership | Single owner only | Multi-owner site registration |
+| Camp/event coordination | Repetitive manual setup | Policy templates + bulk invitations |
+| Professional dashboards | No aggregated multi-site view | Professional enablement layer |
+| Elder care adoption | Workflow friction | Onboarding workflows + organization identity |
 
 ### Priority Roadmap for Use Cases
 
 1. **Access Event Logging** - Enables billing documentation use case
-2. **One-Time Schedules** - Enables event-based sharing
-3. **Organization Identity** - Enables healthcare system integration
-4. **Policy Toggle States** - Enables autonomy swing use case
-5. **Delegated Ownership** - Enables elder care and pediatric management
+2. **One-Time Schedules** - Enables event-based sharing (marathon, camp week)
+3. **Policy Templates** - Reduces friction for common scenarios (school, camp, clinic)
+4. **Organization Identity** - Enables healthcare system and facility integration
+5. **Bulk Invitations** - Enables camp and elder care professional adoption
+6. **Policy Toggle States** - Enables autonomy swing use case
+7. **Delegated Ownership** - Enables elder care and pediatric management
+8. **Professional Dashboards** - Aggregated view for consented sites (camp, facility)
 
 ---
 
